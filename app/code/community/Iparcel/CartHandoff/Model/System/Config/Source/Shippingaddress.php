@@ -14,7 +14,7 @@ class Iparcel_CartHandoff_Model_System_Config_Source_Shippingaddress
     const CA = 3;
     const UK = 4;
 
-    const ADDRESS = array(
+    private $addresses = array(
         self::NJ => array(
             'shipping_first_name' => 'UPS',
             'shipping_last_name' => 'i-parcel',
@@ -56,6 +56,17 @@ class Iparcel_CartHandoff_Model_System_Config_Source_Shippingaddress
             'shipping_country' => 'GB'
         )
     );
+
+    /**
+     * Return the matching address
+     *
+     * @param string $code
+     * @return array
+     */
+    public function getAddress($code)
+    {
+        return $this->addresses[$code];
+    }
 
     /**
      * Options list

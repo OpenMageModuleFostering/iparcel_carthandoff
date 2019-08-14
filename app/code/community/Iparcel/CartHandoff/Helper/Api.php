@@ -135,7 +135,6 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
                     }
                 }
 
-                // TODO: Add logic to handle simple products with custom options
                 $itemDetails = array(
                     'item_number' => $item->getSku(),
                     'quantity' => $qty,
@@ -326,7 +325,7 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
                 ->setRequest(json_encode($request))
                 ->setResponse($response)
                 ->save();
-            
+
             $items = json_decode($response, true);
             $items = $items['ItemDetailsList'];
 
@@ -662,7 +661,7 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
          * pull that address from the source model
          */
         if ($shippingAddressConfiguration != $shippingAddressSource::CUSTOMER) {
-            $selectedAddress = $shippingAddressSource::ADDRESS[$shippingAddressConfiguration];
+            $selectedAddress = $shippingAddressSource->getAddress($shippingAddressConfiguration);
             $selectedAddress['shipping_email'] = $address->shipping_email;
             $address = (object) $selectedAddress;
         }
