@@ -51,7 +51,9 @@ class Iparcel_All_AjaxController extends Mage_Core_Controller_Front_Action
                 }
             }
 
-            $sku = $child->getSku();
+            if (is_null($child) == false) {
+                $sku = $child->getSku();
+            }
 
         } else {
             /**

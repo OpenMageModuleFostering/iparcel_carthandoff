@@ -33,7 +33,7 @@ class Iparcel_All_Model_Carrier_Iparcel extends Iparcel_All_Model_Carrier_Abstra
             /** @var boolean $internationalOrder */
             $internationalOrder = Mage::helper('iparcel')->getIsInternational($request);
             if ($internationalOrder && Mage::getStoreConfig('carriers/iparcel/active')) {
-                /** @var array $iparcel Tax & Duty totals */
+                /** @var array $iparcelTaxAndDuty Tax & Duty totals */
                 $iparcelTaxAndDuty = array();
                 /** @var Mage_Shipping_Model_Rate_Result $result*/
                 $result = Mage::getModel('shipping/rate_result');

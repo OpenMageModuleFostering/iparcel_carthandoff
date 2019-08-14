@@ -74,7 +74,7 @@ class Iparcel_All_Helper_Api
 
     /**
      * Finds the value of attribute matching the extension's configuration
-     * 
+     *
      * @param Mage_Catalog_Model_Product $product
      * @param string $code Attribute code
      * @return string
@@ -747,7 +747,7 @@ class Iparcel_All_Helper_Api
     /**
      * Accepts a Magento quote or order, then returns an address formatted for
      * the API
-     * 
+     *
      * @param object $object Object to extract address information from
      * @param bool $request If provided, this shipping rate request is used
      * @return array Address information formatted for API requests
@@ -825,12 +825,12 @@ class Iparcel_All_Helper_Api
         // Find the price of the product
         $itemPrice = (float) $item->getCalculationPrice();
         // if no price and item has parent (is configurable)
-        if (!$itemPrice && ($parent = $item->getParentItem())) {
+        if (is_null($itemPrice) && ($parent = $item->getParentItem())) {
             // get parent price
             $itemPrice = (float)$this->_getProductAttribute($parent->getProduct(), 'final_price') ?: (float)$this->_getProductAttribute($parent->getProduct(), 'price');
         }
         // if still no price
-        if (!$itemPrice) {
+        if (is_null($itemPrice)) {
             // get product price
             $itemPrice = (float)$this->_getProductAttribute($itemProduct, 'price');
         }

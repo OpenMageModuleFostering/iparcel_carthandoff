@@ -41,4 +41,28 @@ class Iparcel_CartHandoff_Model_Observer
 
         return;
     }
+
+    /**
+     * Prevent PayPal checkout on UPS i-parcel CartHandoff orders
+     *
+     * @param Varien_Event_Observer
+     */
+    public function paypalPrepareLineItems(Varien_Event_Observer $observer)
+    {
+        $cart = $observer->getEvent()->getPaypalCart();
+        $shippingAddress = $cart->getSalesEntity()->getShippingAddress();
+        $totalAbstract = Mage::getModel('iparcel/quote_address_total_abstract');
+
+        if (!is_object($shippingAddress)) {
+            return true;
+        }
+
+        if ($totalAbstract->isIparcelShipping($shippingAddress)) {
+            Mage::throwException(
+                'UPS i-parcel orders cannot be paid with PayPal'
+            );
+        }
+
+        return true;
+    }
 }

@@ -16,10 +16,13 @@ $options = array(
 );
 
 foreach ($entities as $entity) {
-    $installer->addAttribute($entity, 'base_iparcel_duty_amount', $options);
-    $installer->addAttribute($entity, 'iparcel_duty_amount', $options);
-    $installer->addAttribute($entity, 'base_iparcel_tax_amount', $options);
-    $installer->addAttribute($entity, 'iparcel_tax_amount', $options);
+    $dutyCode = Mage::getModel('iparcel/payment_iparcel')->getDutyCode();
+    $taxCode = Mage::getModel('iparcel/payment_iparcel')->getTaxCode();
+
+    $installer->addAttribute($entity, 'base_' . $dutyCode . '_amount', $options);
+    $installer->addAttribute($entity, $dutyCode . '_amount', $options);
+    $installer->addAttribute($entity, 'base_' . $taxCode . '_amount', $options);
+    $installer->addAttribute($entity, $taxCode . '_amount', $options);
 }
 
 $installer->endSetup();

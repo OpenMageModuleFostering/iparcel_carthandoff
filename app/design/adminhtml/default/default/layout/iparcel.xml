@@ -35,17 +35,6 @@
             <block type="core/template" name="catalog.sync" template="iparcel/sync/ajax/catalog.phtml"/>
         </reference>
     </adminhtml_iparcel_sync_ajax_catalog>
-    <adminhtml_iparcel_sync_ajax_checkitems>
-        <reference name="head">
-            <action method="addJs"><script>iparcel/jQuery.js</script></action>
-            <action method="addJs"><script>iparcel/adminhtml/sync.js</script></action>
-            <action method="addCss"><stylesheet>iparcel/ajaxSync.css</stylesheet></action>
-            <action method="setTitle"><title>i-parcel Check Items</title></action>
-        </reference>
-        <reference name="content">
-            <block type="core/template" name="checkitems.sync" template="iparcel/sync/ajax/checkitems.phtml" />
-        </reference>
-    </adminhtml_iparcel_sync_ajax_checkitems>
 
     <adminhtml_sales_order_view>
         <reference name="order_totals">

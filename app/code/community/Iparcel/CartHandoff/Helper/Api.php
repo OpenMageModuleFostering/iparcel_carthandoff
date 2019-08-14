@@ -28,7 +28,11 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
      * @param string $returnUrl URL to use once the order is submitted.
      * @return mixed Transaction Number, in case of error, returns false
      */
-    public function setCheckout(Mage_Sales_Model_Quote $quote, $cancelUrl = false, $returnUrl = false)
+    public function setCheckout(
+        Mage_Sales_Model_Quote $quote,
+        $cancelUrl = false,
+        $returnUrl = false
+    )
     {
         $customer = $quote->getCustomer();
         $billingAddress = null;
@@ -43,12 +47,19 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
         // customer.
         if ($quoteBillingAddress->getEmail() == null) {
             // Pull the default billing address from the customer
-            $customerDefaultBilling = $helper->getDefaultAddress($customer, false);
+            $customerDefaultBilling = $helper->getDefaultAddress(
+                $customer,
+                false
+            );
             if (is_null($customerDefaultBilling)) {
                 $billingAddress = null;
                 $phoneNumber = null;
             } else {
-                $billingAddress = $this->_buildAddress($customerDefaultBilling, false, $customer->getEmail());
+                $billingAddress = $this->_buildAddress(
+                    $customerDefaultBilling,
+                    false,
+                    $customer->getEmail()
+                );
                 $phoneNumber = $customerDefaultBilling->getTelephone();
             }
         } else {
@@ -59,15 +70,26 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
 
         if ($quoteShippingAddress->getAddressId() == null) {
             // Pull the default shipping address from the customer
-            $customerDefaultShipping = $helper->getDefaultAddress($customer, true);
+            $customerDefaultShipping = $helper->getDefaultAddress(
+                $customer,
+                true
+            );
             if (is_null($customerDefaultShipping)) {
                 $shippingAddress = null;
             } else {
-                $shippingAddress = $this->_buildAddress($customerDefaultShipping, true, $billingAddress['email']);
+                $shippingAddress = $this->_buildAddress(
+                    $customerDefaultShipping,
+                    true,
+                    $billingAddress['email']
+                );
             }
         } else {
             // Set the address information from the quote shipping address
-            $shippingAddress = $this->_buildAddress($quoteShippingAddress, true, $billingAddress['email']);
+            $shippingAddress = $this->_buildAddress(
+                $quoteShippingAddress,
+                true,
+                $billingAddress['email']
+            );
         }
 
         if ($cancelUrl == false) {
@@ -93,11 +115,14 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
             'page_currency' => $customerCurrency,
             'custom' => $quote->getStoreId(),
             'discount_amount_cart' => 0,
+            'prepaidamount' => 0,
             'reference_number' => $quote->getId(),
             'return' => $returnUrl,
             'shopping_url' => Mage::getBaseUrl(),
             'cancel_return' => $cancelUrl,
-            'image_url' => Mage::getDesign()->getSkinUrl(Mage::getStoreConfig('design/header/logo_src')),
+            'image_url' => Mage::getDesign()->getSkinUrl(
+                Mage::getStoreConfig('design/header/logo_src')
+            ),
             'AddressInfo' => array(
                 'Billing' => $billingAddress,
                 'Shipping' => $shippingAddress
@@ -108,31 +133,44 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
         );
         $totals = $quote->getTotals();
 
-        if(isset($totals['discount'])) {
-            $request['discount_amount_cart'] = abs($totals['discount']->getValue());
+        // Find prepaid amount for quote
+        $request['prepaidamount'] = $this->_findPrepaidAmount($quote);
+
+        // Calculate discount
+        $totalKeys = array(
+            'subtotal', 'shipping', 'iparcel_tax', 'iparcel_duty', 'tax'
+        );
+
+        $total = 0;
+        foreach ($totalKeys as $key) {
+            if (array_key_exists($key, $totals) && is_object($totals[$key])) {
+                $total += $totals[$key]->getValue();
+            }
         }
 
-        if(isset($totals['ugiftcert'])) {
-            $request['discount_amount_cart'] += abs($request['discount_amount_cart']) + abs($totals['ugiftcert']->getValue());
-        }
+        $request['discount_amount_cart'] = round(
+            $total - $quote->getGrandTotal(),
+            2
+        );
 
         // Add items to request
         $quoteItems = $quote->getAllItems();
         $itemDetailsList = array();
         foreach($quoteItems as $item) {
-            if ($item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_SIMPLE) {
-                // If no price is attached to this item, load it from the parent item
-                $price = $item->getPrice();
+            if ($this->_itemRequiresPricing($item)) {
+                /**
+                 * If no price is attached to this item, load it from
+                 * the parent item
+                 */
+                $price = $item->getCalculationPrice();
                 $qty = $item->getTotalQty();
-                if ($price == '0' || is_null($price)) {
-                    $parentItem = $item->getParentItem();
-                    if($parentItem) {
-                        $price = $parentItem->getPrice();
-                        $qty = $parentItem->getTotalQty();
-                    } else {
-                        $price = $item->getProduct()->getPrice();
-                        $qty = $item->getTotalQty();
-                    }
+                $parentItem = $item->getParentItem();
+
+                if ($parentItem) {
+                    $price = $parentItem->getCalculationPrice();
+                }
+                if (is_null($price)) {
+                    $price = $item->getProduct()->getPrice();
                 }
 
                 $itemDetails = array(
@@ -203,7 +241,14 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
 
         if ($createOrder) {
             try {
-                $order = $this->_buildOrder($session->getQuote(), $response);
+                // Make sure the order doesn't exist before attempting
+                // to build a new order
+                $order = Mage::helper('ipcarthandoff')
+                       ->loadOrderByTrackingNumber($response->trackingnumber);
+
+                if ($order == false) {
+                    $order = $this->_buildOrder($session->getQuote(), $response);
+                }
             } catch (Exception $e) {
                 Mage::logException($e);
                 $return = array (
@@ -266,13 +311,30 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
      * CheckItems call is used for the product -- no other changes are made.
      *
      * @param object $collection
+     * @param string $countryCode If set, use this Country Code
+     *               instead of the user's cookie
+     * @param boolean $returnResponse If true, return the response
+     *                from the API call
      * @return object
      */
-    public function checkItems($collection)
+    public function checkItems(
+        $collection,
+        $countryCode = false,
+        $returnResponse = false
+    )
     {
         $singleProduct = false;
+
+        /**
+         * If $collection is a single product, create a collection of
+         * that single product to act on
+         */
         $remove = true;
-        if (in_array('Varien_Data_Collection', class_parents($collection)) == false) {
+        $isCollection = in_array(
+            'Varien_Data_Collection',
+            class_parents($collection)
+        );
+        if ($isCollection == false) {
             $singleProduct = true;
             $collection = Mage::getModel('catalog/product')
                 ->getCollection()
@@ -286,51 +348,101 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
         $cookie = Mage::getModel('core/cookie')->get('ipar_iparcelSession');
         $cookie = json_decode($cookie);
 
+        // If the cookie is empty, create an object to hold the locale/currency
+        if ($countryCode !== false) {
+            $cookie = (object) array(
+                'locale' => $countryCode,
+                'currency' => 'USD'
+            );
+        }
+
         // Get iparcel session ID
         $sessID = Mage::getModel('core/cookie')->get('ipar_sess_id');
 
         if (!isset($cookie->locale) || $cookie->locale == 'US') {
-            return $collection;
+            $return = $collection;
+            if ($returnResponse) {
+                $return = array(
+                    'collection' => $collection,
+                    'response' => null
+                );
+            }
+            return $return;
         }
 
         // Pass the product collection into the CheckItems class to check the
         // previously cached results
         $checkItemsModel = Mage::getModel('ipcarthandoff/checkitems');
-        $cache = $checkItemsModel->getCache($collection, $cookie->locale, $storeId);
+        $cache = $checkItemsModel->getCache(
+            $collection,
+            $cookie->locale,
+            $storeId
+        );
 
         $eligibleSKUs = array();
         // If the cache count matches the collection, skip sending the request
         if (count($cache) != count($collection)) {
-            $request = array(
-                'Key' => Mage::helper('iparcel')->getGuid(),
-                'ItemDetailsList' => $this->_prepareCollectionForCheckItems($collection),
-                'AddressInfo' => array(
-                    'Billing' => array(),
-                    'Shipping' => array(
-                        'CountryCode' => $cookie->locale,
-                        'PostalCode' => 'A1A1A1'
-                    ),
-                ),
-                'CurrencyCode' => $cookie->currency,
-                'DDP' => true,
-                'Insurance' => false,
-                'SessionID' => $sessID,
-                'ServiceLevel' => 115
+
+            // Prepare the ItemDetailsList
+            $itemDetailsCollection = $this->_prepareCollectionForCheckItems(
+                $collection
             );
 
-            $response = $this->_restJSON($request, $this->_checkItems);
+            // Split the ItemDetailsList into collections of products
+            $itemDetailsCollection = array_chunk(
+                $itemDetailsCollection,
+                $this->_getChunkSize()
+            );
 
-            Mage::getModel('iparcel/log')
-                ->setController('CheckItems')
-                ->setRequest(json_encode($request))
-                ->setResponse($response)
-                ->save();
+            $responses = array();
+            foreach ($itemDetailsCollection as $itemDetailsList) {
+                $request = array(
+                    'Key' => Mage::helper('iparcel')->getGuid(),
+                    'ItemDetailsList' => $itemDetailsList,
+                    'AddressInfo' => array(
+                        'Billing' => array(),
+                        'Shipping' => array(
+                            'CountryCode' => $cookie->locale,
+                            'PostalCode' => 'A1A1A1'
+                        ),
+                    ),
+                    'CurrencyCode' => $cookie->currency,
+                    'DDP' => true,
+                    'Insurance' => false,
+                    'SessionID' => $sessID,
+                    'ServiceLevel' => 115
+                );
 
-            $items = json_decode($response, true);
-            $items = $items['ItemDetailsList'];
+                $response = $this->_restJSON($request, $this->_checkItems);
+
+                Mage::getModel('iparcel/log')
+                    ->setController('CheckItems')
+                    ->setRequest(json_encode($request))
+                    ->setResponse($response)
+                    ->save();
+
+                $responses[] = json_decode($response, true);
+            }
+
+            // Build the $response from the separate responses.
+            $response = array_shift($responses);
+            foreach ($responses as $currentResponse) {
+                $response['ItemDetailsList'] = array_merge(
+                    $response['ItemDetailsList'],
+                    $currentResponse['ItemDetailsList']
+                );
+            }
+
+            // Build the $items from the response's ItemDetailsList
+            $items = $response['ItemDetailsList'];
 
             // Cache response from the web service
-            $checkItemsModel->cacheResponse($items, $collection, $cookie->locale, $storeId);
+            $checkItemsModel->cacheResponse(
+                $items,
+                $collection,
+                $cookie->locale,
+                $storeId
+            );
 
             // Load eligible SKUs into the array
             foreach ($items as $item) {
@@ -369,10 +481,21 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
         }
 
         if ($singleProduct) {
-            return $collection->getFirstItem();
+            $return = $collection->getFirstItem();
         }
 
-        return $collection;
+        $return = $collection;
+
+        // If `$returnResponse` is enabled, include the response in
+        // the return value
+        if ($returnResponse) {
+            $return = array (
+                'collection' => $return,
+                'response' => $response
+            );
+        }
+
+        return $return;
     }
 
     /**
@@ -604,7 +727,11 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
 
         // Create shipment with tracking number
         $order = Mage::getModel('sales/order')->loadByIncrementId($order->getIncrementId());
-        $order->sendNewOrderEmail();
+
+        if (Mage::getStoreConfig('payment/ipcarthandoff/send_new_order_emails') != 0) {
+            $order->sendNewOrderEmail();
+        }
+
         $itemsToShip = array();
         foreach ($order->getAllItems() as $item) {
             $itemsToShip[$item->getItemId()] = $item->getQtyOrdered();
@@ -670,5 +797,70 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
         }
 
         return $address;
+    }
+
+    /**
+     * Determines if item requires pricing in API request
+     *
+     * @param $item
+     * @return bool
+     */
+    private function _itemRequiresPricing($item)
+    {
+        $type = $item->getProductType();
+        if ($type == Mage_Catalog_Model_Product_Type::TYPE_GROUPED
+            || $type == Mage_Catalog_Model_Product_Type::TYPE_SIMPLE
+            || $type == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE
+        ) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Finds the prepaid value of a quote.
+     *
+     * Because there is no baked-in prepayment methods in Magento
+     * (except Enterprise Gift Cards) This method has to do the work
+     * of supporting third-party prepayment methods
+     *
+     * @param Mage_Sales_Model_Quote $quote
+     * @return float
+     */
+    private function _findPrepaidAmount(Mage_Sales_Model_Quote $quote)
+    {
+        $prepaidAmount = 0.00;
+
+        // Support for AheadWorks_Storecredit
+        if (class_exists('AW_Storecredit_Helper_Data', false)) {
+            $awStorecreditHelper = Mage::helper('aw_storecredit');
+            if ($awStorecreditHelper
+                && $awStorecreditHelper->isModuleEnabled()
+            ) {
+                $awStorecreditTotals = Mage::helper('aw_storecredit/totals');
+                $creditCollection = $awStorecreditTotals
+                                  ->getQuoteStoreCredit($quote->getId());
+
+                foreach ($creditCollection as $credit) {
+                    $prepaidAmount += $credit->getStorecreditAmount();
+                }
+            }
+        }
+
+        return $prepaidAmount;
+    }
+
+    /**
+     * Returns the chunk size configured for CheckItems API calls
+     *
+     * @return int
+     */
+    private function _getChunkSize()
+    {
+        $chunkSize = Mage::getStoreConfig(
+            'iparcel/international_customer/checkitems_chunk_size'
+        );
+
+        return (int) $chunkSize;
     }
 }

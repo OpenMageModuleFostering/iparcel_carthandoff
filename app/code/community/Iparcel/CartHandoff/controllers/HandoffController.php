@@ -168,7 +168,6 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
             || $this->_quote->getPayment()->getMethod() != 'ipcarthandoff'
         ) {
             $this->_session->addError("Invalid quote for Cart Handoff review.");
-            $this->_cancelPayment($transactionId);
             $this->getResponse()->setRedirect(Mage::getUrl('checkout/cart'));
             return;
         }

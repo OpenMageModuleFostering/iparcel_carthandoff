@@ -192,6 +192,14 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </checkitems_clear_cache>
+                        <checkitems_chunk_size>
+                            <label>Amount of products to send in a CheckItems request</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>120</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </checkitems_chunk_size>
                     </fields>
                 </international_customer>
             </groups>

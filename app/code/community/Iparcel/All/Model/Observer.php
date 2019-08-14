@@ -41,6 +41,11 @@ class Iparcel_All_Model_Observer
      */
     public function shipment_save_after($observer)
     {
+        // Do not automatically trigger SubmitParcel with CartHandoff
+        if (Mage::helper('iparcel')->isCartHandoffInstalled()) {
+            return true;
+        }
+
         // if autotrack is enabled then order can be tracked when shipped
         if (Mage::getStoreConfigFlag('carriers/iparcel/autotrack')) {
             // If we are splitting shipments, skip automatic submission.
@@ -109,6 +114,11 @@ class Iparcel_All_Model_Observer
      */
     public function order_place_after($observer)
     {
+        // Do not automatically create shipments with CartHandoff
+        if (Mage::helper('iparcel')->isCartHandoffInstalled()) {
+            return true;
+        }
+
         /** @var Mage_Sales_Model_Order $order */
         $order = $observer->getOrder();
 
@@ -119,7 +129,7 @@ class Iparcel_All_Model_Observer
         if (!$order->getQuote()) {
             return;
         }
-        
+
         $iparcelCarrierCode = Mage::getModel('iparcel/payment_iparcel')->getCode();
 
         // if it's i-parcel shipping method

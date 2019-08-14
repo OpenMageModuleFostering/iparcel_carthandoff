@@ -5,6 +5,8 @@
  * @author		Bobby Burden <bburden@i-parcel.com>
  * @class		Mage_Core_Block_Template
  */
+$initUrl = Mage::helper('adminhtml')->getUrl('adminhtml/iparcel_sync_ajax/catalogJsonInit');
+$uploadUrl = Mage::helper('adminhtml')->getUrl('adminhtml/iparcel_sync_ajax/catalogJsonUpload');
 ?>
 <div id="starting">
 <p>Starting catalog synchronization</p>
@@ -18,6 +20,6 @@
 </div>
 <script type="text/javascript">
     jQuery(document).ready(function() {
-        var sync = new iparcelSync.sync('<?php echo Mage::helper('adminhtml')->getUrl('adminhtml/iparcel_sync_ajax/catalogJson') ?>', <?php echo Mage::getStoreConfig('catalog_mapping/upload/step'); ?>);
+        var sync = new iparcelSync.sync('<?php echo $initUrl ?>', '<?php echo $uploadUrl ?>', <?php echo Mage::getStoreConfig('catalog_mapping/upload/step'); ?>);
     })
 </script>

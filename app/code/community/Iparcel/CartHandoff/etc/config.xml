@@ -2,7 +2,7 @@
 <config>
     <modules>
         <Iparcel_CartHandoff>
-            <version>1.4.2</version>
+            <version>1.5.0</version>
         </Iparcel_CartHandoff>
     </modules>
     <global>
@@ -28,7 +28,6 @@
                 <rewrite>
                     <product_type_price>Iparcel_CartHandoff_Model_Catalog_Product_Type_Price</product_type_price>
                     <product_type_configurable_price>Iparcel_CartHandoff_Model_Catalog_Product_Type_Configurable_Price</product_type_configurable_price>
-                    <product_type_grouped_price>Iparcel_CartHandoff_Model_Catalog_Product_Type_Grouped_Price</product_type_grouped_price>
                     <layer>Iparcel_CartHandoff_Model_Catalog_Layer</layer>
                 </rewrite>
             </catalog>
@@ -64,6 +63,15 @@
                     </ipcarthandoff>
                 </observers>
             </core_block_abstract_prepare_layout_after>
+            <paypal_prepare_line_items>
+                <observers>
+                    <ipcarthandoff>
+                        <type>singleton</type>
+                        <class>ipcarthandoff/observer</class>
+                        <method>paypalPrepareLineItems</method>
+                    </ipcarthandoff>
+                </observers>
+            </paypal_prepare_line_items>
         </events>
     </global>
     <frontend>
@@ -123,6 +131,7 @@
                 <checkitems>0</checkitems>
                 <checkitems_price>0</checkitems_price>
                 <checkitems_cache_lifetime>0</checkitems_cache_lifetime>
+                <checkitems_chunk_size>100</checkitems_chunk_size>
             </international_customer>
         </iparcel>
     </default>

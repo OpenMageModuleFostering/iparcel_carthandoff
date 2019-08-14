@@ -14,10 +14,8 @@ class Iparcel_CartHandoff_Adminhtml_Ipcarthandoff_Checkitems_CacheController ext
     public function clearAction()
     {
         $cache = Mage::getModel('ipcarthandoff/checkitems')
-            ->getCollection()
-            ->addFieldToFilter('id', array('gt' => 0))
-            ->load();
-        
+               ->getCollection();
+
         foreach($cache as $item) {
             $item->delete();
         }

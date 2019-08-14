@@ -23,12 +23,19 @@ class Iparcel_All_Model_Catalog_Product_Observer
      */
     public function product_save($observer)
     {
-        if ($this->_isEnabled()) {
-            $product = $observer->getProduct();
-            $productCollection = new Varien_Data_Collection();
-            $productCollection->addItem($product);
-            Mage::helper('iparcel/api')->submitCatalog($productCollection);
+        try {
+            if ($this->_isEnabled()) {
+                $product = $observer->getProduct();
+                $productCollection = new Varien_Data_Collection();
+                $productCollection->addItem($product);
+                Mage::helper('iparcel/api')->submitCatalog($productCollection);
+            }
+        } catch (Exception $e) {
+            Mage::log('Unable to sync SKU: ' . $product->getSku() . ' to i-parcel catalog.');
+            Mage::log($e->getMessage());
         }
+
+        return $this;
     }
 
     /**
@@ -56,12 +63,19 @@ class Iparcel_All_Model_Catalog_Product_Observer
      */
     public function product_delete($observer)
     {
-        if ($this->_isEnabled()) {
-            $product = $observer->getProduct();
-            $product->setIsDeleted(true);
-            $productCollection = new Varien_Data_Collection();
-            $productCollection->addItem($product);
-            Mage::helper('iparcel/api')->submitCatalog($productCollection);
+        try {
+            if ($this->_isEnabled()) {
+                $product = $observer->getProduct();
+                $product->setIsDeleted(true);
+                $productCollection = new Varien_Data_Collection();
+                $productCollection->addItem($product);
+                Mage::helper('iparcel/api')->submitCatalog($productCollection);
+            }
+        } catch (Exception $e) {
+            Mage::log('Unable to delete SKU: ' . $product->getSku() . ' from i-parcel catalog.');
+            Mage::log($e->getMessage());
         }
+
+        return $this;
     }
 }

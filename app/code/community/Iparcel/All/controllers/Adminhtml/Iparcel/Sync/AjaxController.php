@@ -9,51 +9,45 @@
 class Iparcel_All_Adminhtml_Iparcel_Sync_AjaxController extends Mage_Adminhtml_Controller_Action
 {
     /**
-     * Response for init querry
+     * Response for init query
      *
-     * @return array
+     * @return bool
      */
-    protected function _initResponse()
+    protected function catalogJsonInitAction()
     {
         $step = Mage::getStoreConfig('catalog_mapping/upload/step');
-        return array('count' => Mage::getModel('catalog/product')->getCollection()->getSize()-floor(Mage::getStoreConfig('catalog_mapping/upload/offset')/$step)*$step);
+        $count = Mage::getModel('catalog/product')
+                ->getCollection()
+                ->getSize()
+            - floor(Mage::getStoreConfig('catalog_mapping/upload/offset')
+                / $step
+            ) * $step;
+
+        $response = array(
+            'count' => $count
+        );
+
+        $this->getResponse()
+            ->setHeader('Content-type', 'application/json', true)
+            ->setBody(json_encode($response));
+
+        return true;
     }
 
     /**
-     * Response for initCatalog querry
+     * Response for uploadCatalog query
      *
-     * @alias _initResponse
-     * @return array
+     * @return bool
      */
-    protected function _initCatalogResponse()
+    protected function catalogJsonUploadAction()
     {
-        return $this->_initResponse();
-    }
+        $params = $this->getRequest()->getParams();
 
-    /**
-     * Response for initCheckitems querry
-     *
-     * @alias _initResponse
-     * @return array
-     */
-    protected function _initCheckitemsResponse()
-    {
-        return $this->_initResponse();
-    }
-
-    /**
-     * Response for uploadCatalog querry
-     *
-     * @param array $params
-     * @return array
-     */
-    protected function _uploadCatalogResponse($params)
-    {
         $page = $params['page'];
         $step = $params['step'];
 
         $offset = Mage::getStoreConfig('catalog_mapping/upload/offset');
-        $page += floor($offset/$step);
+        $page += floor($offset / $step);
 
         $productCollection = Mage::getModel('catalog/product')
             ->getCollection()
@@ -64,95 +58,28 @@ class Iparcel_All_Adminhtml_Iparcel_Sync_AjaxController extends Mage_Adminhtml_C
         $n = Mage::helper('iparcel/api')->submitCatalog($productCollection);
 
         if ($n != -1) {
-            return array(
-                'page'=>$page,
-                'step'=>$step,
-                'uploaded'=>$n
-            );
-        } else {
-            return array(
-                'error'=>'1'
-            );
-        }
-    }
-
-    /**
-     * Response for _uploadCheckitems querry
-     *
-     * @param array $params
-     * @return array
-     */
-    protected function _uploadCheckitemsResponse($params)
-    {
-        $page = $params['page'];
-        $step = $params['step'];
-
-        $productCollection = Mage::getModel('catalog/product')
-            ->getCollection()
-            ->setPageSize($step)
-            ->setCurPage($page);
-        /* var $productCollection Mage_Catalog_Model_Resource_Product_Collection */
-
-        $n = Mage::helper('iparcel/api')->checkItems($productCollection);
-
-        if ($n != -1) {
-            return array(
+            $response = array(
                 'page' => $page,
                 'step' => $step,
                 'uploaded' => $n
             );
         } else {
-            return array(
+            $response = array(
                 'error' => '1'
             );
         }
-    }
 
-    /**
-    * Submit Catalog request json action
-    */
-    public function catalogJsonAction() 
-    {
-        $params = $this->getRequest()->getParams();
-        $params['type'] = '_'.$params['type'].'CatalogResponse';
-        if (method_exists($this, $params['type'])) {
-            $_response = $this->$params['type']($params);
-            $this->getResponse()
-                ->setHeader('Content-type', 'application/json', true)
-                ->setBody(json_encode($_response));
-            return;
-        }
+        $this->getResponse()
+            ->setHeader('Content-type', 'application/json', true)
+            ->setBody(json_encode($response));
+
+        return true;
     }
 
     /**
      * Submit Catalog request action
      */
     public function catalogAction()
-    {
-        $this->loadLayout();
-        $this->renderLayout();
-    }
-
-    /**
-    * Check Items request json action
-    */
-    public function checkitemsJsonAction() 
-    {
-        $params = $this->getRequest()->getParams();
-        $params['type'] = '_'.$params['type'].'CheckItemsResponse';
-        if (method_exists($this, $params['type'])) {
-            $_response = $this->$params['type']($params);                
-            $this->getResponse()
-                ->setHeader('Content-type', 'application/json', true)
-                ->setBody(json_encode($_response));
-            return;
-        }
-    }   
-
-    /**
-     * Check Items request action
-     */
-    public function checkitemsAction()
     {
         $this->loadLayout();
         $this->renderLayout();

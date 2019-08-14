@@ -101,7 +101,7 @@ class Iparcel_All_Helper_Data extends Mage_Core_Helper_Abstract
 
         if (is_null($carrier) || $carrier == false) {
             $method = $order->getShippingMethod();
-            if (preg_match('/^iparcel.*/', $method)) {
+            if (preg_match('/^' . $iparcelCarrier->getCarrierCode() . '.*/', $method)) {
                 return true;
             }
             return false;

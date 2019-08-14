@@ -1,9 +1,5 @@
 document.observe("dom:loaded", function(){
-    if (ipar_Session.locale != 'US') {
-        setButtonVisibility('ipcarthandoff-button', 'block');
-        setButtonVisibility('btn-proceed-checkout', 'none');
-        setCheckoutMethodVisibility(false);
-    }
+    window.watchIparSession = setInterval(checkLocale, 500);
 
     if ($('country')) {
         $('country').observe('change', function(){
@@ -19,6 +15,21 @@ document.observe("dom:loaded", function(){
         });
     }
 });
+
+function checkLocale()
+{
+    if (typeof ipar_Session == "undefined" || ipar_Session == null) {
+        return;
+    }
+
+    if (ipar_Session.locale != 'US') {
+        setButtonVisibility('ipcarthandoff-button', 'block');
+        setButtonVisibility('btn-proceed-checkout', 'none');
+        setCheckoutMethodVisibility(false);
+    }
+
+    clearInterval(window.watchIparSession);
+}
 
 function setButtonVisibility(buttonClass, displayValue)
 {
