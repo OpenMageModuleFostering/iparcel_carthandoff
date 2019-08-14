@@ -30,6 +30,15 @@ class Iparcel_All_Model_Carrier_Iparcel extends Iparcel_All_Model_Carrier_Abstra
     public function collectRates(Mage_Shipping_Model_Rate_Request $request)
     {
         try {
+
+            // If this is being used with CartHandoff, we don't return methods
+            // for orders with Amazon or PayPal payments
+            if (Mage::helper('iparcel')->isCartHandoffInstalled()
+                && ($this->_isAmazonPayments() || $this->_isPayPalPayment())
+            ) {
+                return false;
+            }
+
             /** @var boolean $internationalOrder */
             $internationalOrder = Mage::helper('iparcel')->getIsInternational($request);
             if ($internationalOrder && Mage::getStoreConfig('carriers/iparcel/active')) {
@@ -122,5 +131,60 @@ class Iparcel_All_Model_Carrier_Iparcel extends Iparcel_All_Model_Carrier_Abstra
     public function getAllowedMethods()
     {
         return $this->getMethodsNames();
+    }
+
+    /**
+     * Determines if the checkout session is an Amazon Payments session
+     *
+     * @return boolean
+     */
+    private function _isAmazonPayments()
+    {
+        return $this->_paymentMethodContains('amazon');
+    }
+
+    /**
+     * Determines if the checkout session is a PayPal payment
+     *
+     * @return boolean
+     */
+    private function _isPayPalPayment()
+    {
+        return $this->_paymentMethodContains('paypal');
+    }
+
+    /**
+     * Check if string exists in payment method name
+     *
+     * @param string Payment Method name to search for
+     * @return boolean
+     */
+    private function _paymentMethodContains($string)
+    {
+        $paymentMethod = $this->_getPaymentMethod();
+
+        if (strpos($paymentMethod, $string) !== false) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Finds the payment method of the current checkout session
+     *
+     * @return string
+     */
+    private function _getPaymentMethod()
+    {
+        if (is_null($this->_paymentMethod)) {
+            $checkoutSession = Mage::getSingleton('checkout/session');
+            $this->_paymentMethod = $checkoutSession
+                       ->getQuote()
+                       ->getPayment()
+                       ->getMethod();
+        }
+
+        return $this->_paymentMethod;
     }
 }

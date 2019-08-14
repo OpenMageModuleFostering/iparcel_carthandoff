@@ -87,6 +87,11 @@ class Iparcel_CartHandoff_Model_Payment_Ipcarthandoff extends Iparcel_All_Model_
         return true;
     }
 
+    public function isAvailable($quote = null)
+    {
+        return $this->canUseCheckout();
+    }
+
     /**
      * Creates a paid invoice for the Magento order
      *

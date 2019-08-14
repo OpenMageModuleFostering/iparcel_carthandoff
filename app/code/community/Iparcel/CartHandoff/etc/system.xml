@@ -115,13 +115,22 @@
                         </order_status>
                         <sort_order>
                             <label>Sort Order</label>
-                            <tooltip>Sort Order as a payment method.</tooltip>
+                            <tooltip>Sort Order for the payment method.</tooltip>
                             <frontend_type>text</frontend_type>
                             <sort_order>30</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </sort_order>
+			<back_to_shopping>
+                            <label>Back To Shopping link</label>
+                            <tooltip>This string will be appended to the end of the site's BaseURL, and be linked to from the UPS i-parcel payment page. This is blank by default.</tooltip>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>31</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+			</back_to_shopping>
                     </fields>
                 </ipcarthandoff>
             </groups>

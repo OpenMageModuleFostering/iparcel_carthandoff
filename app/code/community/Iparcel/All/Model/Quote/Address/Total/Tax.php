@@ -25,6 +25,11 @@ class Iparcel_All_Model_Quote_Address_Total_Tax extends Iparcel_All_Model_Quote_
             return;
         }
 
+        // Make sure that we are not working on a quote with no items
+        if ($address->getQuote()->hasItems() == false) {
+            return;
+        }
+
         if ($this->isIparcelShipping($address) &&
             (Mage::helper('iparcel')->getDisplayTaxAndDutyCumulatively()
                 || Mage::helper('iparcel')->getDisplayTaxAndDutySeparately())) {

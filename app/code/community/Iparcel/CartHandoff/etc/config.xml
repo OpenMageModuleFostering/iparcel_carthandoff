@@ -2,7 +2,7 @@
 <config>
     <modules>
         <Iparcel_CartHandoff>
-            <version>1.5.0</version>
+            <version>1.6.0</version>
         </Iparcel_CartHandoff>
     </modules>
     <global>
@@ -31,6 +31,21 @@
                     <layer>Iparcel_CartHandoff_Model_Catalog_Layer</layer>
                 </rewrite>
             </catalog>
+            <payment>
+                <rewrite>
+                    <method_free>Iparcel_CartHandoff_Model_Payment_Free</method_free>
+                </rewrite>
+            </payment>
+            <checkout>
+                <rewrite>
+                    <type_onepage>Iparcel_CartHandoff_Model_Checkout_Type_Onepage</type_onepage>
+                </rewrite>
+            </checkout>
+            <aw_storecredit>
+                <rewrite>
+                    <observer_storecredit>Iparcel_CartHandoff_Model_Observer_Storecredit</observer_storecredit>
+                </rewrite>
+            </aw_storecredit>
         </models>
         <helpers>
             <ipcarthandoff>

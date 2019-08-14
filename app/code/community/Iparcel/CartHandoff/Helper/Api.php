@@ -20,6 +20,9 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
     /** @var string URL for CheckItems API Method */
     protected $_checkItems = 'https://webservices.i-parcel.com/api/CheckItems';
 
+    /** @var int Code used when throwing Invalid Quote exception */
+    protected $_invalidQuoteCode = 10;
+
     /**
      * Sets up customer's checkout information in UPS i-parcel
      *
@@ -100,6 +103,10 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
             $returnUrl = $helper->getReturnUrl();
         }
 
+        $shoppingUrl = Mage::getBaseUrl() . Mage::getStoreConfig(
+                         'payment/ipcarthandoff/back_to_shopping'
+                     );
+
         // Set currency from iparcelSession cookie
         $iparcelSession = json_decode(
             Mage::getModel('core/cookie')->get('ipar_iparcelSession')
@@ -118,7 +125,7 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
             'prepaidamount' => 0,
             'reference_number' => $quote->getId(),
             'return' => $returnUrl,
-            'shopping_url' => Mage::getBaseUrl(),
+            'shopping_url' => $shoppingUrl,
             'cancel_return' => $cancelUrl,
             'image_url' => Mage::getDesign()->getSkinUrl(
                 Mage::getStoreConfig('design/header/logo_src')
@@ -168,6 +175,7 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
 
                 if ($parentItem) {
                     $price = $parentItem->getCalculationPrice();
+                    $qty = $parentItem->getTotalQty();
                 }
                 if (is_null($price)) {
                     $price = $item->getProduct()->getPrice();
@@ -207,11 +215,9 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
      * Retrieves checkout details from UPS i-parcel API
      *
      * @param string $transactionId Transaction ID returned by the API
-     * @param object $session User's Magento session
-     * @param bool $createOrder Create's Magento order if true (default)
-     * @return object On success, contains Magento's order; on error, a a status message
+     * @return object On success, contains API response; on error, a a status message
      */
-    public function getCheckoutDetails($transactionId, $session, $createOrder = true)
+    public function getCheckoutDetails($transactionId)
     {
         // Make request to API
         $request = array(
@@ -239,68 +245,18 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
             return (object) $return;
         }
 
-        if ($createOrder) {
-            try {
-                // Make sure the order doesn't exist before attempting
-                // to build a new order
-                $order = Mage::helper('ipcarthandoff')
-                       ->loadOrderByTrackingNumber($response->trackingnumber);
-
-                if ($order == false) {
-                    $order = $this->_buildOrder($session->getQuote(), $response);
-                }
-            } catch (Exception $e) {
-                Mage::logException($e);
-                $return = array (
-                    'status' => 0,
-                    'message' => 'An error occurred when processing your order.'
-                );
-                return (object) $return;
-            }
-
-            $return = array(
-                'status' => 1,
-                'order' => $order
-            );
-        } else {
-            $return = array(
-                'status' => 1,
-                'GetCheckoutDetails' => $response
-            );
-        }
-
-        return (object) $return;
+        return (object) $response;
     }
 
     /**
-     * Cancels payment for the transaction ID
+     * Cancels payment for the transaction ID -- no longer used
      *
      * @param string $tx Transaction ID to cancel
      * @return bool Returns true on success
      */
     public function cancelPayment($tx)
     {
-        $request = array(
-            'key' => Mage::helper('iparcel')->getGuid(),
-            'tx' => $tx
-        );
-
-        $response = $this->_restJSON($request, $this->_cancelPayment);
-
-        // Log request and response
-        Mage::getModel('iparcel/log')
-            ->setController('CancelPayment')
-            ->setRequest(json_encode($request))
-            ->setResponse($response)
-            ->save();
-
-        $response = json_decode($response);
-
-        if ($response->status == 'OK') {
-            return true;
-        }
-
-        return false;
+        return true;
     }
 
     /**
@@ -585,11 +541,24 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
      * @param object $response API Response
      * @param Mage_Sales_Model_Order Created order
      */
-    private function _buildOrder($quote, $response)
+    public function buildOrder($quote, $response)
     {
 
         Mage::register('iparcel_skip_auto_create_shipment', true);
         Mage::register('iparcel_skip_auto_submit', true);
+
+        /**
+         * Make sure the quote is active, and is an ipcarthandoff order
+         */
+        if (!$quote->getIsActive()
+            || $quote->getPayment()->getMethod() != Mage::helper('ipcarthandoff')->getPaymentMethodCode()
+        ) {
+            throw new Exception(
+                "Invalid quote for Cart Handoff review.",
+                $this->_invalidQuoteCode
+            );
+            return;
+        }
 
         // Clear quote address
         $quote->removeAllAddresses()->save();
@@ -622,6 +591,7 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
             ->setCountryId($billingCountry->getId())
             ->setRegionId($billingRegion->getId())
             ->setTelephone($response->day_phone_b)
+            ->setEmail($responseBilling->email)
             ->save();
 
         $responseShipping = $response->AddressInfo->Shipping;
@@ -654,10 +624,16 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
             ->setTelephone($response->day_phone_b)
             ->setShippingMethod('iparcel_' . $response->servicelevel)
             ->setShippingAmount($response->shipping_cost)
+            ->setEmail($responseShipping->shipping_email)
             ->save();
 
         // Setup payment details
-        $quote->getPayment()->addData(array('method' => 'iparcel'));
+        $quote->getPayment()->addData(
+            array(
+                'method' => Mage::helper('ipcarthandoff')->getPaymentMethodCode()
+            )
+        );
+
         $quote->save();
         $quote->reserveOrderId();
 
@@ -691,6 +667,7 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
         $convert = Mage::getModel('sales/convert_quote');
 
         $order = $convert->toOrder($quote);
+
         $order->setPayment($convert->paymentToOrderPayment($quote->getPayment()));
         $order->setBillingAddress($convert->addressToOrderAddress($quote->getBillingAddress()));
         $order->setShippingAddress($convert->addressToOrderAddress($quote->getShippingAddress()));

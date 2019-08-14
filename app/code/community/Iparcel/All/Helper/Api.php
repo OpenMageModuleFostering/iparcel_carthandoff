@@ -521,6 +521,12 @@ class Iparcel_All_Helper_Api
                 $price = $this->_getProductAttribute($product, 'price');
             }
 
+            // If all attempts to gather a price based on configuration fail,
+            // call getPrice() on the product
+            if (!$price) {
+                $price = $product->getPrice();
+             }
+
             $item['CountryOfOrigin'] = (string)$product->getCountryOfManufacture();
             $item['CurrentPrice'] = (float)$price;
             $item['Delete'] = $product->getIsDeleted() ? true : false;
@@ -556,6 +562,12 @@ class Iparcel_All_Helper_Api
 
             // Detect and handle a Simple Product with Custom Options
             if ($product->getTypeId() == Mage_Catalog_Model_Product_Type::TYPE_SIMPLE && $product->getHasOptions()) {
+                if(get_class($product->getOptionInstance()) == 'MageWorx_CustomOptions_Model_Catalog_Product_Option') {
+                    if($this->_productHasDropdownOption($product)) {
+                        $items['SKUs'][] = $item;
+                    }
+                }
+
                 // loop through each of the sorted products with custom options
                 // and build out custom option and option type based skus
                 foreach ($this->_findSimpleProductVariants($product) as $customOptionProduct) {
@@ -577,13 +589,22 @@ class Iparcel_All_Helper_Api
                     $item['ProductName'] = $name . $customOptionName;
                     $items['SKUs'][] = $item;
                 }
+
             } else {
                 $items['SKUs'][] = $item;
             }
-
         }
 
         return $items;
+    }
+
+    protected function _productHasDropdownOption($product) {
+        foreach($product->getOptions() as $option) {
+            if($option->getType() == 'drop_down') {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -741,6 +762,12 @@ class Iparcel_All_Helper_Api
             $result[] = $allOptionals;
         }
 
+        // Make sure that the first element of the result array is an empty
+        // array. This will cause the "base" SKU to be sent as a catalog item.
+        if ($result[0] != array()) {
+            array_unshift($result, array());
+        }
+
         return $result;
     }
 
@@ -833,6 +860,12 @@ class Iparcel_All_Helper_Api
         if (is_null($itemPrice)) {
             // get product price
             $itemPrice = (float)$this->_getProductAttribute($itemProduct, 'price');
+        }
+
+        // If all attempts to gather a price based on configuration fail,
+        // call getPrice() on the product
+        if (!$itemPrice) {
+            $itemPrice = $itemProduct->getPrice();
         }
 
         $lineItem = array();

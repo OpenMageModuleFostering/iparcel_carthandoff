@@ -2,7 +2,7 @@
 <config>
     <modules>
         <Iparcel_All>
-            <version>1.2.1</version>
+            <version>1.3.0</version>
         </Iparcel_All>
     </modules>
     <frontend>
@@ -57,6 +57,9 @@
                     <log>
                         <table>iparcel_all_log</table>
                     </log>
+		    <tracking_number>
+			<table>iparcel_all_tracking_number</table>
+		    </tracking_number>
                 </entities>
             </iparcel_resource>
             <sales>

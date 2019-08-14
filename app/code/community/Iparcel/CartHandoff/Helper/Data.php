@@ -103,4 +103,20 @@ class Iparcel_CartHandoff_Helper_Data extends Mage_Core_Helper_Abstract
 
         return $status;
     }
+
+    /**
+     * Returns the payment method code for Cart Handoff
+     *
+     * @return string
+     */
+    public function getPaymentMethodCode()
+    {
+        $paymentModel = Mage::getModel('ipcarthandoff/payment_ipcarthandoff');
+
+        if (is_null($paymentModel)) {
+            return "";
+        }
+
+        return $paymentModel->getCode();
+    }
 }

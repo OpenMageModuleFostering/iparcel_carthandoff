@@ -137,15 +137,23 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
         );
 
         // Handle error status
-        if ($checkoutDetailsResponse->status == 0) {
+        if ($checkoutDetailsResponse->status == 'FAILED'
+            || property_exists($checkoutDetailsResponse, 'status') == false
+        ) {
             $this->_session->addError($checkoutDetailsResponse->message);
-            $this->_cancelPayment($transactionId);
             $this->getResponse()->setRedirect(Mage::getUrl('checkout/cart'));
             return;
+        } else {
+            $order = $this->_buildOrder($checkoutDetailsResponse, $this->_session);
         }
 
-        $this->_prepareSuccessPage($checkoutDetailsResponse);
+        $this->_prepareSuccessPage($order);
         $this->loadLayout();
+        Mage::dispatchEvent('checkout_onepage_controller_success_action',
+                            array(
+                                'order_ids' => $this->_orderIds
+                            )
+        );
         $this->renderLayout();
 
         return;
@@ -160,34 +168,31 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
         $transactionId = $this->getRequest()->getParam('tx');
         $apiHelper = Mage::helper('ipcarthandoff/api');
 
-        /**
-         * Make sure the quote is active, the customer matches the quote,
-         * and the payment method is 'ipcarthandoff'
-         */
-        if (!$this->_quote->getIsActive()
-            || $this->_quote->getPayment()->getMethod() != 'ipcarthandoff'
-        ) {
-            $this->_session->addError("Invalid quote for Cart Handoff review.");
-            $this->getResponse()->setRedirect(Mage::getUrl('checkout/cart'));
-            return;
-        }
-
         $checkoutDetailsResponse = $apiHelper->getCheckoutDetails(
             $transactionId,
             $this->_session
         );
 
         // Handle error status
-        if ($checkoutDetailsResponse->status == 0) {
+        if ($checkoutDetailsResponse->status == 'FAILED'
+            || property_exists($checkoutDetailsResponse, 'status') == false
+        ) {
             $this->_session->addError($checkoutDetailsResponse->message);
-            $this->_cancelPayment($transactionId);
             $this->getResponse()->setRedirect(Mage::getUrl('checkout/cart'));
             return;
+        } else {
+            $order = $this->_buildOrder($checkoutDetailsResponse, $this->_session);
         }
 
+
         // Show the order review page
-        $this->_prepareSuccessPage($checkoutDetailsResponse);
+        $this->_prepareSuccessPage($order);
         $this->loadLayout();
+        Mage::dispatchEvent('checkout_onepage_controller_success_action',
+                            array(
+                                'order_ids' => $this->_orderIds
+                            )
+        );
         $this->renderLayout();
     }
 
@@ -210,17 +215,18 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
     /**
      * Prepares the session to display the success page
      *
-     * @param array $checkoutDetailsResponse
+     * @param object $order
      */
-    private function _prepareSuccessPage($checkoutDetailsResponse)
+    private function _prepareSuccessPage($order)
     {
-        $order = $checkoutDetailsResponse->order;
-        $order = Mage::getModel('sales/order')->loadByIncrementId($order->getIncrementId());
         $this->_session->setQuoteId($order->getQuoteId());
+        $this->_session->setLastQuoteId($order->getQuoteId());
         $this->_session->setLastSuccessQuoteId($order->getQuoteId());
         $this->_session->getQuote()->setIsActive(false)->save();
         $this->_session->setOrder($order);
         $this->_session->setLastOrderId($order->getId());
+
+        $this->_orderIds = array($order->getId());
     }
 
     /**
@@ -241,5 +247,106 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
         }
 
         return true;
+    }
+
+    /**
+     * Builds order based on response from GetCheckoutDetails API
+     *
+     * @param object $response Response from the API
+     * @param object $session User's session
+     * @return mixed Order is returned on success. Error string on failure
+     */
+    private function _buildOrder($response, $session)
+    {
+       // Pull the quote ID from the response. Apply it to the current session
+        $quoteId = $response->reference_number;
+        $quote = Mage::getModel('sales/quote')->load($quoteId);
+        $session = $session->replaceQuote($quote);
+
+        try {
+            // Make sure the order doesn't exist before attempting
+            // to build a new order
+            $order = Mage::helper('ipcarthandoff')
+                   ->loadOrderByTrackingNumber($response->trackingnumber);
+
+            if ($order == false) {
+                $order = Mage::helper('ipcarthandoff/api')->buildOrder(
+                    $session->getQuote(), $response
+                );
+            }
+        } catch (Exception $e) {
+            Mage::logException($e);
+            // This catches any excpetions thrown during order creation.
+
+            $order = $this->_loadAndVerify($response, $quote);
+
+            if ($order == false) {
+                /**
+                 * If the Magento order cannot be created, or was created incorrectly,
+                 * attempt to load the order and cancel it if it exists.
+                 */
+                $order = Mage::getModel('sales/order');
+                $order->loadByAttribute('quote_id', $quote->getId());
+
+                if ($order->getId() != null) {
+                    $order->cancel();
+                }
+
+                // Should only hit this point if there is no way to recover from
+                // errors during order creation
+                return $e->getMessage();
+            }
+        }
+
+        return $order;
+    }
+
+    /**
+     * Load and Verify an order from GetCheckoutDetails response
+     *
+     * @param object $response Response from the API
+     * @param object $quote Magento quote
+     * @return mixed Order object or false
+     */
+    private function _loadAndVerify($response, $quote)
+    {
+        // Load the order based on the quote ID
+        $quoteId = $quote->getId();
+        $order = Mage::getModel('sales/order');
+
+        // Attempt to load the order based on the quote ID
+        try {
+            $order->loadByAttribute('quote_id', $quoteId);
+        } catch (Exception $e) {
+            Mage::logException($e);
+            return false;
+        }
+
+        // Find the grand total of the order in the response
+        $responseGrandTotal = 0;
+        foreach ($response->ItemDetailsList as $item) {
+            $responseGrandTotal += $item->amount;
+        }
+
+        $responseGrandTotal = $responseGrandTotal
+                            + $response->shipping_cost
+                            + $response->duty
+                            + $response->tax;
+        $responseGrandTotal -= $response->discount_amount_cart;
+
+        // Verify that the order totals match the information in the response.
+        $grandTotalsMatch = $order->getBaseGrandTotal() == $responseGrandTotal;
+        $shippingTotalsMatch = $order->getBaseShippingAmount() == $response->shipping_cost;
+        $taxTotalsMatch = $order->getBaseTaxAmount() == $response->tax;
+
+        // Return the order if totals match
+        if ($grandTotalsMatch
+            && $shippingTotalsMatch
+            && $taxTotalsMatch
+        ) {
+            return $order;
+        }
+
+        return false;
     }
 }
