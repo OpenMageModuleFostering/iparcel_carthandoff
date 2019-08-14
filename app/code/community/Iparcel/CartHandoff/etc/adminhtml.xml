@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<config>
+    <menu>
+        <iparcel>
+            <children>
+                <shipping translate="title" module="iparcel">
+                    <title>Shipping Methods</title>
+                    <sort_order>10</sort_order>
+                    <action>adminhtml/system_config/edit/section/carriers</action>
+                </shipping>
+                <carthandoff translate="title" module="iparcel">
+                    <title>Cart Handoff</title>
+                    <sort_order>19</sort_order>
+                    <action>adminhtml/system_config/edit/section/payment/ipcarthandoff</action>
+                </carthandoff>
+            </children>
+        </iparcel>
+    </menu>
+</config>

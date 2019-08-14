@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+<config>
+    <sections>
+        <carriers>
+            <groups>
+                <iparcel>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                </iparcel>
+            </groups>
+        </carriers>
+        <payment>
+            <groups>
+                <ipcarthandoff translate="label" module="ipcarthandoff">
+                    <label>i-parcel Cart Handoff</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>10000</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <expanded>1</expanded>
+                    <fields>
+                        <title>
+                            <label>Button Title</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>5</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </title>
+                        <display_on_cart>
+                            <label>Display on Cart Page?</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </display_on_cart>
+                        <cart_placement>
+                            <label>Placement on Cart Page</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>ipcarthandoff/system_config_source_buttonplacement</source_model>
+                            <sort_order>15</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </cart_placement>
+                        <active>
+                            <label>Display as Payment Method?</label>
+                            <tooltip>Adds the button to the "Payment Method" checkout step.</tooltip>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </active>
+                        <payment_method_message>
+                            <label>Message to display when selecting Payment Method</label>
+                            <tooltip>This message is meant to inform the user that they will be redirected to UPS i-parcel to complete checkout.</tooltip>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>25</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </payment_method_message>
+                        <sort_order>
+                            <label>Sort Order</label>
+                            <tooltip>Sort Order as a payment method.</tooltip>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </sort_order>
+                    </fields>
+                </ipcarthandoff>
+            </groups>
+        </payment>
+        <iparcel>
+            <groups>
+                <tax>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                </tax>
+                <scripts>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                </scripts>
+                <international_customer>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                </international_customer>
+            </groups>
+        </iparcel>
+    </sections>
+</config>

@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<config>
+    <menu>
+        <iparcel translate="title" module="iparcel">
+            <title>i-parcel</title>
+            <sort_order>9999</sort_order>
+            <children>
+                <config translate="title" module="iparcel">
+                    <title>Configuration</title>
+                    <sort_order>0</sort_order>
+                    <action>adminhtml/system_config/edit/section/iparcel</action>
+                </config>
+                <sync translate="title" module="iparcel">
+                    <title>Synchronization</title>
+                    <sort_order>5</sort_order>
+                    <children>
+                        <catalog_mapping translate="title" module="iparcel">
+                            <title>Catalog Mapping</title>
+                            <sort_order>5</sort_order>
+                            <action>adminhtml/system_config/edit/section/catalog_mapping</action>
+                        </catalog_mapping>
+                    </children>
+                </sync>
+                <log>
+                    <title>Logs</title>
+                    <sort_order>20</sort_order>
+                    <action>adminhtml/iparcel_log/index</action>
+                </log>
+            </children>
+        </iparcel>
+    </menu>
+</config>

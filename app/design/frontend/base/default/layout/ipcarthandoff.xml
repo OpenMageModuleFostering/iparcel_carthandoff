@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layout version="0.1.0">
+    <checkout_cart_index>
+        <reference name="checkout.cart.top_methods">
+            <block type="ipcarthandoff/button" name="checkout.cart.methods.ipcarthandoff.top" before="-" template="iparcel/carthandoff/button.phtml" />
+        </reference>
+    </checkout_cart_index>
+
+    <checkout_cart_index>
+        <reference name="checkout.cart.methods">
+            <block type="ipcarthandoff/button" name="checkout.cart.methods.ipcarthandoff.bottom" before="-" template="iparcel/carthandoff/button.phtml" />
+        </reference>
+    </checkout_cart_index>
+
+    <ipcarthandoff_handoff_return translate="label">
+        <label>Cart Handoff Checkout Success</label>
+        <reference name="root">
+            <action method="setTemplate"><template>page/2columns-right.phtml</template></action>
+        </reference>
+        <reference name="content">
+            <block type="checkout/onepage_success" name="checkout.success" template="checkout/success.phtml"/>
+        </reference>
+    </ipcarthandoff_handoff_return>
+
+    <ipcarthandoff_handoff_paymentreturn translate="label">
+        <label>Cart Handoff Checkout Success</label>
+        <reference name="root">
+            <action method="setTemplate"><template>page/2columns-right.phtml</template></action>
+        </reference>
+        <reference name="content">
+            <block type="checkout/onepage_success" name="checkout.success" template="checkout/success.phtml"/>
+        </reference>
+    </ipcarthandoff_handoff_paymentreturn>
+
+    <default>
+        <reference name="topCart.extra_actions">
+            <block type="ipcarthandoff/button" name="topcart.extra_actions.ipcarthandoff" template="iparcel/carthandoff/button.phtml" />
+        </reference>
+        <reference name="cart_sidebar.extra_actions">
+            <block type="ipcarthandoff/button" name="cart_sidebar.extra_actions.ipcarthandoff" template="iparcel/carthandoff/button.phtml" />
+        </reference>
+    </default>
+</layout>

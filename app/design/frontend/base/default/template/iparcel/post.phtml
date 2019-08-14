@@ -1,0 +1,11 @@
+<?php
+/**
+ * @category    design
+ * @package     Iparcel_GlobaleCommerce
+ * @author      Bobby Burden <bburden@i-parcel.com>
+ * @class       Iparcel_GlobaleCommerce_Block_Catalog_Product
+ */
+?>
+<script type="text/javascript">
+    iparcelPost.single('<?php echo $this->getProduct()->getSku(); ?>', '<?php echo substr(Mage::getBaseUrl(),5); ?>', '<?php echo $this->getStock(); ?>');
+</script>

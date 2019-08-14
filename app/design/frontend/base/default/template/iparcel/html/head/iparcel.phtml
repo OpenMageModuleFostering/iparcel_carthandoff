@@ -1,0 +1,14 @@
+<?php
+/**
+ * @category    design
+ * @package     Iparcel_GlobaleCommerce
+ * @author      Bobby Burden <bburden@i-parcel.com>
+ * @class       Iparcel_GlobaleCommerce_Block_Html_Head_Jquery
+ */
+$helper = Mage::helper('iparcel');
+?>
+<?php if($this->getFlag()): ?>
+<script type="text/javascript" src="<?php echo $helper->getScriptUrl(); ?>JavaScript/Merchant/<?php echo $helper->getCustomerId(); ?>/1"></script>
+<script type="text/javascript">var ipar_is_mage = true;</script>
+<link rel="stylesheet" type="text/css" href="<?php echo $helper->getScriptUrl(); ?>CSS/Merchant/<?php echo $helper->getCustomerId(); ?>/1" />
+<?php endif; ?>

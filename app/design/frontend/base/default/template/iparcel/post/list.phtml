@@ -1,0 +1,24 @@
+<?php
+/**
+ * @category    design
+ * @package     Iparcel_GlobaleCommerce
+ * @author      Bobby Burden <bburden@i-parcel.com>
+ * @class       Iparcel_GlobaleCommerce_Block_Catalog_Product_List
+ */
+?>
+<?php
+$_productCollection = $this->getLoadedProductCollection();
+$helper = Mage::helper('iparcel')
+?>
+<script type="text/javascript">
+    iparcelPost.sku_list({
+        <?php foreach ($_productCollection as $_product): ?>
+        "<?php echo $helper->jsEscape($_product->getSku()); ?>": "<?php echo $helper->jsEscape($_product->getName()); ?>",
+        <?php endforeach; ?>
+    });
+    iparcelPost.stock_list({
+        <?php foreach ($_productCollection as $_product): ?>
+        "<?php echo $helper->jsEscape($_product->getName()); ?>": "<?php echo $this->getStock($_product); ?>",
+        <?php endforeach; ?>
+    });
+</script>

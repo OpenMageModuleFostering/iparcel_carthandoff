@@ -1,0 +1,480 @@
+<?php
+/**
+ * Controller for handling Cart Handoff
+ *
+ * @category    Iparcel
+ * @package     Iparcel_CartHandoff
+ * @author      Bobby Burden <bburden@i-parcel.com>
+ */
+class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
+{
+    /** @var string URL for SetCheckout API Method */
+    protected $_setCheckout = 'https://pay.i-parcel.com/v1/api/SetCheckout';
+
+    /** @var string URL for GetCheckoutDetails API Method */
+    protected $_getCheckoutDetails = 'https://pay.i-parcel.com/v1/api/GetCheckoutDetails';
+
+    /** @var string URL for CancelPayment API Method */
+    protected $_cancelPayment = 'https://pay.i-parcel.com/v1/api/Cancel';
+
+    /**
+     * Sets up customer's checkout information in UPS i-parcel
+     *
+     * @param Mage_Sales_Model_Quote $quote
+     * @param string $cancelUrl URL to use when cancelling an order
+     * @param string $returnUrl URL to use once the order is submitted.
+     * @return mixed Transaction Number, in case of error, returns false
+     */
+    public function setCheckout(Mage_Sales_Model_Quote $quote, $cancelUrl = false, $returnUrl = false)
+    {
+        $customer = $quote->getCustomer();
+        $billingAddress = null;
+        $shippingAddress = null;
+        $helper = Mage::helper('ipcarthandoff');
+
+        // Pull the billing and shipping address from the quote
+        $quoteShippingAddress = $quote->getShippingAddress();
+        $quoteBillingAddress = $quote->getBillingAddress();
+
+        // If one or both of these are not set, use the defaults from the
+        // customer.
+        if ($quoteShippingAddress->getEmail() == null) {
+            // Pull the default shipping address from the customer
+            $customerDefaultShipping = $helper->getDefaultAddress($customer, true);
+            if (is_null($customerDefaultShipping)) {
+                $shippingAddress = null;
+            } else {
+                $shippingAddress = $this->_buildAddress($customerDefaultShipping, true, $customer->getEmail());
+            }
+        } else {
+            // Set the address information from the quote shipping address
+            $shippingAddress = $this->_buildAddress($quoteShippingAddress, true);
+        }
+
+        if ($quoteBillingAddress->getEmail() == null) {
+            // Pull the default billing address from the customer
+            $customerDefaultBilling = $helper->getDefaultAddress($customer, false);
+            if (is_null($customerDefaultBilling)) {
+                $billingAddress = null;
+                $phoneNumber = null;
+            } else {
+                $billingAddress = $this->_buildAddress($customerDefaultBilling, false, $customer->getEmail());
+                $phoneNumber = $customerDefaultBilling->getTelephone();
+            }
+        } else {
+            // Set the address information from the quote billing address
+            $billingAddress = $this->_buildAddress($quoteBillingAddress, false);
+            $phoneNumber = $quoteBillingAddress->getTelephone();
+        }
+
+        if ($cancelUrl == false) {
+            $cancelUrl = Mage::getUrl('checkout/cart');
+        }
+
+        if ($returnUrl == false) {
+            $returnUrl = $helper->getReturnUrl();
+        }
+
+        // Set currency from iparcelSession cookie
+        $iparcelSession = json_decode(
+            Mage::getModel('core/cookie')->get('ipar_iparcelSession')
+        );
+        $customerCurrency = null;
+        if (isset($iparcelSession->currency)) {
+            $customerCurrency = $iparcelSession->currency;
+        }
+
+        $request = array(
+            'key' => Mage::getStoreConfig('iparcel/config/userid'),
+            'currency_code' => $quote->getQuoteCurrencyCode(),
+            'page_currency' => $customerCurrency,
+            'custom' => $quote->getStoreId(),
+            'discount_amount_cart' => $quote->getDiscountAmount(),
+            'reference_number' => $quote->getId(),
+            'return' => $returnUrl,
+            'shopping_url' => Mage::getBaseUrl(),
+            'cancel_return' => $cancelUrl,
+            'image_url' => Mage::getDesign()->getSkinUrl(Mage::getStoreConfig('design/header/logo_src')),
+            'AddressInfo' => array(
+                'Billing' => $billingAddress,
+                'Shipping' => $shippingAddress
+            ),
+            'ItemDetailsList' => null,
+            'day_phone_a' => '',
+            'day_phone_b' => $phoneNumber,
+        );
+
+        // Add items to request
+        $quoteItems = $quote->getAllItems();
+        $itemDetailsList = array();
+        foreach($quoteItems as $item) {
+            if ($item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_SIMPLE) {
+                // If no price is attached to this item, load it from the parent item
+                $price = $item->getProduct()->getPrice();
+                $qty = $item->getQty();
+                if ($price == '0' || is_null($price)) {
+                    $parentItem = $item->getParentItem();
+                    $price = $parentItem->getPrice();
+                    $qty = $parentItem->getQty();
+                }
+
+                // TODO: Add logic to handle simple products with custom options
+                $itemDetails = array(
+                    'item_number' => $item->getSku(),
+                    'quantity' => $qty,
+                    'item_name' => $item->getName(),
+                    'amount' => $price,
+                    'discount_amount' => $item->getDiscountAmount(),
+                );
+                $itemDetailsList[] = $itemDetails;
+            }
+        }
+        $request['ItemDetailsList'] = $itemDetailsList;
+
+        $response = $this->_restJSON($request, $this->_setCheckout);
+
+        // Log request and response
+        Mage::getModel('iparcel/log')
+            ->setController('SetCheckout')
+            ->setRequest(json_encode($request))
+            ->setResponse($response)
+            ->save();
+
+        $response = json_decode($response);
+
+        if (is_object($response) && property_exists($response, 'tx')) {
+            return $response->tx;
+        }
+
+        return false;
+    }
+
+    /**
+     * Retrieves checkout details from UPS i-parcel API
+     *
+     * @param string $transactionId Transaction ID returned by the API
+     * @param object $session User's Magento session
+     * @param bool $createOrder Create's Magento order if true (default)
+     * @return object On success, contains Magento's order; on error, a a status message
+     */
+    public function getCheckoutDetails($transactionId, $session, $createOrder = true)
+    {
+        // Make request to API
+        $request = array(
+            'key' => Mage::getStoreConfig('iparcel/config/userid'),
+            'tx' => $transactionId
+        );
+
+        $response = $this->_restJSON($request, $this->_getCheckoutDetails);
+
+        // Log request and response
+        Mage::getModel('iparcel/log')
+            ->setController('GetCheckoutDetails')
+            ->setRequest(json_encode($request))
+            ->setResponse($response)
+            ->save();
+
+        $response = json_decode($response);
+
+        // If an error is returned, build error information and return
+        if (!property_exists($response, 'status') || $response->status == 'FAIL') {
+            $return = array (
+                'status' => 0,
+                'message' => "Unable to verify order with UPS i-parcel"
+            );
+            return (object) $return;
+        }
+
+        if ($createOrder) {
+            try {
+                $order = $this->_buildOrder($session->getQuote(), $response);
+            } catch (Exception $e) {
+                Mage::logException($e);
+                $return = array (
+                    'status' => 0,
+                    'message' => 'An error occured when processing your order.'
+                );
+                return (object) $return;
+            }
+
+            $return = array(
+                'status' => 1,
+                'order' => $order
+            );
+        } else {
+            $return = array(
+                'status' => 1,
+                'GetCheckoutDetails' => $response
+            );
+        }
+
+        return (object) $return;
+    }
+
+    /**
+     * Cancels payment for the transaction ID
+     *
+     * @param string $tx Transaction ID to cancel
+     * @return bool Returns true on success
+     */
+    public function cancelPayment($tx)
+    {
+        $request = array(
+            'key' => Mage::helper('iparcel')->getGuid(),
+            'tx' => $tx
+        );
+
+        $response = $this->_restJSON($request, $this->_cancelPayment);
+
+        // Log request and response
+        Mage::getModel('iparcel/log')
+            ->setController('CancelPayment')
+            ->setRequest(json_encode($request))
+            ->setResponse($response)
+            ->save();
+
+        $response = json_decode($response);
+
+        if ($response->status == 'OK') {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Builds an address for setCheckout with the given Address Object
+     *
+     * @param object $address Address model (various classes)
+     * @param bool $shipping If set to true, will append "shipping_" to the keys
+     * @param string $email If set, this email address is used
+     * @return array Formatted address array, empty if the $address is invalid
+     */
+    private function _buildAddress($address, $shipping = false, $email = null)
+    {
+        if (!is_object($address)) {
+            return array();
+        }
+
+        $prefix = '';
+
+        if ($shipping) {
+            $prefix = 'shipping_';
+        }
+
+        $formattedAddress = array (
+            $prefix . 'email' => is_null($email) ? $address->getEmail() : $email,
+            $prefix . 'first_name' => $address->getFirstname(),
+            $prefix . 'last_name' => $address->getLastname(),
+            $prefix . 'address1' => $address->getStreet1(),
+            $prefix . 'address2' => $address->getStreet2(),
+            $prefix . 'city' => $address->getCity(),
+            $prefix . 'state' => $address->getRegion(),
+            $prefix . 'zip' => $address->getPostcode(),
+            $prefix . 'country' => $address->getCountryId()
+        );
+
+        return $formattedAddress;
+    }
+
+    /**
+     * Set the URLs for API Calls.
+     *
+     * Useful for setting the API endpoint URLs to controlled URLs for testing.
+     *
+     * @param array $urls Array of URLs to set as [var_name] => 'value'
+     * @return boolean True on success
+     */
+    public function setUrls($urls)
+    {
+        try {
+            foreach ($urls as $name => $url) {
+                $this->{$name} = $url;
+            }
+        } catch (Exception $e) {
+            Mage::log($e->getMessage());
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Builds order from getCheckoutDetails response
+     *
+     * @param Mage_Sales_Model_Quote $quote Magento quote
+     * @param object $response API Response
+     * @param Mage_Sales_Model_Order Created order
+     */
+    private function _buildOrder($quote, $response)
+    {
+
+        Mage::register('iparcel_skip_auto_create_shipment', true);
+        Mage::register('iparcel_skip_auto_submit', true);
+
+        // Clear quote address
+        $quote->removeAllAddresses()->save();
+
+        // Set store for quote to match request.
+        $storeId = $response->custom;
+        if (is_numeric($storeId)) {
+            $quote->setStoreId($storeId);
+        }
+
+        // Set addresses to match response
+        $responseBilling = $response->AddressInfo->Billing;
+        $billingStreet = $responseBilling->address1;
+        if ($responseBilling->address2 != '') {
+            $billingStreet .= "\n" . $responseBilling->address2;
+        }
+        $billingCountry = Mage::getModel('directory/country')->load(
+            $responseBilling->country
+        );
+        $billingRegion = Mage::getModel('directory/region')->loadByName(
+            $responseBilling->state,
+            $billingCountry->getId()
+        );
+        $quote->getBillingAddress()
+            ->setFirstname($responseBilling->first_name)
+            ->setLastname($responseBilling->last_name)
+            ->setStreet($billingStreet)
+            ->setCity($responseBilling->city)
+            ->setPostcode($responseBilling->zip)
+            ->setCountryId($billingCountry->getId())
+            ->setRegionId($billingRegion->getId())
+            ->setTelephone($response->day_phone_b)
+            ->save();
+
+        $responseShipping = $response->AddressInfo->Shipping;
+        $shippingStreet = $responseShipping->shipping_address1;
+        if ($responseShipping->shipping_address2 != '') {
+            $shippingStreet .= "\n" . $responseShipping->shipping_address2;
+        }
+        $shippingCountry = Mage::getModel('directory/country')->load(
+            $responseShipping->shipping_country
+        );
+        $shippingRegion = Mage::getModel('directory/region')->loadByName(
+            $responseShipping->shipping_state,
+            $shippingCountry->getId()
+        );
+        $quote->getShippingAddress()
+            ->setFirstname($responseShipping->shipping_first_name)
+            ->setLastname($responseShipping->shipping_last_name)
+            ->setStreet($shippingStreet)
+            ->setCity($responseShipping->shipping_city)
+            ->setPostcode($responseShipping->shipping_zip)
+            ->setCountryId($shippingCountry->getId())
+            ->setRegionId($shippingRegion->getId())
+            ->setTelephone($response->day_phone_b)
+            ->setShippingMethod('iparcel_' . $response->servicelevel)
+            ->setShippingAmount($response->shipping_cost)
+            ->save();
+
+        // Setup payment details
+        $quote->getPayment()->addData(array('method' => 'iparcel'));
+        $quote->save();
+        $quote->reserveOrderId();
+
+        $serviceLevels = array(
+            'iparcel_' . $response->servicelevel => array(
+                'duty' => (float) $response->duty,
+                'tax' => (float) $response->tax
+            )
+        );
+
+        // Create shipping quote
+        $shippingQuote = Mage::getModel('iparcel/api_quote')->loadByQuoteId($quote->getId());
+        $shippingQuote->setQuoteId($quote->getId());
+        $shippingQuote->setParcelId(0);
+        $shippingQuote->setServiceLevels($serviceLevels);
+        $shippingQuote->save();
+
+        // Create shipping rate
+        $rate = Mage::getModel('sales/quote_address_rate');
+        $rate->setCode('iparcel_' . $response->servicelevel)
+            ->setCarrier('iparcel')
+            ->setCarrierTitle('UPS i-parcel')
+            ->setMethod('iparcel_' . $response->servicelevel)
+            ->setMethodTitle('iparcel')
+            ->setMethodDescription('iparcel')
+            ->setPrice($response->shipping_cost);
+
+        $quote->getShippingAddress()->removeAllShippingRates();
+        $quote->getShippingAddress()->addShippingRate($rate);
+
+        $convert = Mage::getModel('sales/convert_quote');
+
+        $order = $convert->toOrder($quote);
+        $order->setPayment($convert->paymentToOrderPayment($quote->getPayment()));
+        $order->setBillingAddress($convert->addressToOrderAddress($quote->getBillingAddress()));
+        $order->setShippingAddress($convert->addressToOrderAddress($quote->getShippingAddress()));
+
+        $items = $quote->getAllItems();
+        foreach ($items as $item) {
+            $orderItem = $convert->itemToOrderItem($item);
+            $productOptions = $item->getProduct()->getTypeInstance(true)->getOrderOptions($item->getProduct());
+            if ($productOptions) {
+                $options = $productOptions;
+            }
+
+            $additionalOptions = $item->getOptionByCode('additional_options');
+            if ($additionalOptions) {
+                $options['additional_options'] = unserialize($additionalOptions->getValue());
+            }
+
+            if ($options) {
+                $orderItem->setProductOptions($options);
+            }
+
+            if ($item->getParentItem()) {
+                $orderItem->setParentItem($order->getItemByQuoteItemId($item->getParentItem()->getId()));
+            }
+
+            $order->addItem($orderItem);
+        }
+
+        $quote->collectTotals();
+
+        $quote->setIsActive(0);
+
+        Mage::getModel('sales/service_quote', $quote)->submitAll();
+
+        // Create shipment with tracking number
+        $order = Mage::getModel('sales/order')->loadByIncrementId($order->getIncrementId());
+        $itemsToShip = array();
+        foreach ($order->getAllItems() as $item) {
+            $itemsToShip[$item->getItemId()] = $item->getQtyOrdered();
+        }
+
+        $shipmentId = Mage::getModel('sales/order_shipment_api')->create(
+            $order->getIncrementId(),
+            $itemsToShip,
+            null,
+            false,
+            false
+        );
+
+        // Add tracking number
+        $storedServiceLevels = Mage::helper('iparcel')->getServiceLevels();
+        $title = 'UPS I-Parcel';
+        if (array_key_exists($response->servicelevel, $storedServiceLevels)) {
+            $title = $storedServiceLevels[$response->servicelevel];
+        }
+
+        Mage::getModel('sales/order_shipment_api')->addTrack(
+            $shipmentId,
+            $order->getShippingCarrier()->getCarrierCode(),
+            $title,
+            $response->trackingnumber
+        );
+
+        $order->addStatusHistoryComment(
+            'Pending payment status update from UPS i-parcel',
+            Mage_Sales_Model_Order::STATE_PENDING_PAYMENT
+        );
+
+        $order->save();
+
+        return $order;
+    }
+}

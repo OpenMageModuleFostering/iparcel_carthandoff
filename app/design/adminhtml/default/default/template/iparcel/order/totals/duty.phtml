@@ -1,0 +1,9 @@
+<?php $this->setPriceDataObject($this->getSource()) ?>
+<?php if ((float) $this->getSource()->getIparcelDutyAmount()): ?>
+    <tr>
+        <td class="label"><?php echo Mage::helper('iparcel')->getDutyLabel(); ?></td>
+        <td>
+            <?php echo $this->displayPrices($this->getSource()->getBaseIparcelDutyAmount(), $this->getSource()->getIparcelDutyAmount()); ?>
+        </td>
+    </tr>
+<?php endif; ?>

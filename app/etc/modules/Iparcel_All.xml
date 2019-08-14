@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <Iparcel_All>
+            <codePool>community</codePool>
+            <active>true</active>
+        </Iparcel_All>
+    </modules>
+</config>

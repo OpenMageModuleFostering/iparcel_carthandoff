@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+<layout>
+    <default>
+        <reference name="head">
+            <block type="iparcel/html_head_jquery" name="jquery" template="iparcel/html/head/jquery.phtml" />
+            <block type="iparcel/html_head_iparcel" name="html.head.iparcel" template="iparcel/html/head/iparcel.phtml" />
+        </reference>
+    </default>
+    <catalog_product_view>
+        <reference name="head">
+            <action method="addJs"><script>iparcel/lib.js</script></action>
+            <block type="iparcel/html_head_post" name="iparcel_post" template="iparcel/html/head/post.phtml" />
+            <block type="iparcel/catalog_product" name="iparcel_sku" template="iparcel/post.phtml" />
+        </reference>
+    </catalog_product_view>
+    <catalog_category_view>
+        <reference name="head">
+            <action method="addJs"><script>iparcel/lib.js</script></action>
+            <block type="iparcel/html_head_post" name="iparcel_post" template="iparcel/html/head/post.phtml" />
+            <block type="iparcel/catalog_product_list" name="iparcel_sku.list" template="iparcel/post/list.phtml" />
+        </reference>
+    </catalog_category_view>
+    <catalogsearch_result_index>
+        <reference name="head">
+            <action method="addJs"><script>iparcel/lib.js</script></action>
+            <block type="iparcel/html_head_post" name="iparcel_post" template="iparcel/html/head/post.phtml" />
+            <block type="iparcel/catalogsearch_result" name="iparcel_sku.list" template="iparcel/post/list.phtml">
+                <block type="catalog/product_list" name="search_result_list" template="catalog/product/list.phtml"/>
+                <action method="setListCollection"/>
+            </block>
+        </reference>
+    </catalogsearch_result_index>
+    <catalogsearch_advanced_result>
+        <reference name="head">
+            <action method="addJs"><script>iparcel/lib.js</script></action>
+            <block type="iparcel/html_head_post" name="iparcel_post" template="iparcel/html/head/post.phtml" />
+            <block type="iparcel/catalogsearch_advanced_result" name="iparcel_sku.list" template="iparcel/post/list.phtml" />
+        </reference>
+    </catalogsearch_advanced_result>
+    <sales_order_view>
+        <reference name="order_totals">
+            <block type="iparcel/sales_order_totals_duty" name="iparcel_sales_order_totals_duty"></block>
+            <block type="iparcel/sales_order_totals_tax" name="iparcel_sales_order_totals_tax"></block>
+        </reference>
+    </sales_order_view>
+
+    <sales_order_print>
+        <reference name="order_totals">
+            <block type="iparcel/sales_order_totals_duty" name="iparcel_sales_order_totals_duty"></block>
+            <block type="iparcel/sales_order_totals_tax" name="iparcel_sales_order_totals_tax"></block>
+        </reference>
+    </sales_order_print>
+
+    <sales_email_order_items>
+        <reference name="order_totals">
+            <block type="iparcel/sales_order_totals_duty" name="iparcel_sales_order_totals_duty"></block>
+            <block type="iparcel/sales_order_totals_tax" name="iparcel_sales_order_totals_tax"></block>
+        </reference>
+    </sales_email_order_items>
+
+    <sales_order_invoice>
+        <reference name="invoice_totals">
+            <block type="iparcel/sales_order_totals_duty" name="iparcel_sales_order_totals_duty"></block>
+            <block type="iparcel/sales_order_totals_tax" name="iparcel_sales_order_totals_tax"></block>
+        </reference>
+    </sales_order_invoice>
+
+    <sales_order_printinvoice>
+        <reference name="invoice_totals">
+            <block type="iparcel/sales_order_totals_duty" name="iparcel_sales_order_totals_duty"></block>
+            <block type="iparcel/sales_order_totals_tax" name="iparcel_sales_order_totals_tax"></block>
+        </reference>
+    </sales_order_printinvoice>
+
+    <sales_email_order_invoice_items>
+        <reference name="invoice_totals">
+            <block type="iparcel/sales_order_totals_duty" name="iparcel_sales_order_totals_duty"></block>
+            <block type="iparcel/sales_order_totals_tax" name="iparcel_sales_order_totals_tax"></block>
+        </reference>
+    </sales_email_order_invoice_items>
+
+    <sales_order_creditmemo>
+        <reference name="creditmemo_totals">
+            <block type="iparcel/sales_order_totals_duty" name="iparcel_sales_order_totals_duty"></block>
+            <block type="iparcel/sales_order_totals_tax" name="iparcel_sales_order_totals_tax"></block>
+        </reference>
+    </sales_order_creditmemo>
+
+    <sales_order_printcreditmemo>
+        <reference name="creditmemo_totals">
+            <block type="iparcel/sales_order_totals_duty" name="iparcel_sales_order_totals_duty"></block>
+            <block type="iparcel/sales_order_totals_tax" name="iparcel_sales_order_totals_tax"></block>
+        </reference>
+    </sales_order_printcreditmemo>
+
+    <sales_email_order_creditmemo_items>
+        <reference name="creditmemo_totals">
+            <block type="iparcel/sales_order_totals_duty" name="iparcel_sales_order_totals_duty"></block>
+            <block type="iparcel/sales_order_totals_tax" name="iparcel_sales_order_totals_tax"></block>
+        </reference>
+    </sales_email_order_creditmemo_items>
+</layout>

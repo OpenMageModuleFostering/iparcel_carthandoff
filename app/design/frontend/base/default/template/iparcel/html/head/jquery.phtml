@@ -1,0 +1,12 @@
+<?php
+/**
+ * @category    design
+ * @package     Iparcel_GlobaleCommerce
+ * @author      Bobby Burden <bburden@i-parcel.com>
+ * @class       Iparcel_GlobaleCommerce_Block_Html_Head_Jquery
+ */
+?>
+<?php if($this->getFlag()): ?>
+<script type="text/javascript" src="<?php echo Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_JS); ?>iparcel/jQuery.js"></script>
+<script type="text/javascript">jQuery.noConflict();</script>
+<?php endif; ?>

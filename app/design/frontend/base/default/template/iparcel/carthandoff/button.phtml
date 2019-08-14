@@ -1,0 +1,14 @@
+<?php
+/**
+ * Button template
+ *
+ * @var $this Iparcel_CartHandoff_Block_Button
+ */
+?>
+<?php if ($this->shouldDisplay()): ?>
+<p class="ipcarthandoff-button" style="<?php echo $this->getStyle() ?>">
+    <a data-action="checkout-form-submit" href="<?php echo $this->getCheckoutUrl() ?>">
+        <?php echo $this->getButtonTitle(); ?>
+    </a>
+</p>
+<?php endif; ?>

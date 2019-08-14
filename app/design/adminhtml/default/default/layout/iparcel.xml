@@ -1,0 +1,96 @@
+<layout>
+    <adminhtml_system_config_edit>
+        <reference name="head">
+            <action method="addJs">
+                <name>iparcel/adminhtml/shipping-methods.js</name>
+            </action>
+        </reference>
+    </adminhtml_system_config_edit>
+    <adminhtml_iparcel_log_index>
+        <reference name="content">
+            <block type="iparcel/adminhtml_iparcel_logs" name="iparcel.logs" as="logs" />
+        </reference>
+    </adminhtml_iparcel_log_index>
+    <adminhtml_iparcel_shipment_split>
+        <reference name="content">
+            <block type="iparcel/adminhtml_iparcel_shipment_split" name="iparcel_shipment_split">
+                <block type="iparcel/adminhtml_iparcel_shipment_split_form" name="form" template="iparcel/shipment/split/form.phtml">
+                    <block type="adminhtml/sales_order_shipment_create_items" name="shipment_items" template="iparcel/shipment/split/items.phtml">
+                        <action method="addItemRender"><type>default</type><block>adminhtml/sales_items_renderer_default</block><template>iparcel/shipment/split/renderer/default.phtml</template></action>
+                        <action method="addColumnRender"><column>qty</column><block>adminhtml/sales_items_column_qty</block><template>sales/items/column/qty.phtml</template></action>
+                        <action method="addColumnRender"><column>name</column><block>adminhtml/sales_items_column_name</block><template>sales/items/column/name.phtml</template></action>
+                    </block>
+                </block>
+            </block>
+        </reference>
+    </adminhtml_iparcel_shipment_split>
+    <adminhtml_iparcel_sync_ajax>
+        <block type="adminhtml/page" name="root" output="toHtml" template="page.phtml">
+            <block type="adminhtml/page_head" name="head" as="head" template="page/head.phtml">
+                <action method="addJs"><script>iparcel/jQuery.js</script></action>
+                <action method="addJs"><script>iparcel/adminhtml/sync.js</script></action>
+                <action method="addCss"><stylesheet>iparcel/ajaxSync.css</stylesheet></action>
+            </block>
+            <block type="core/text_list" name="content" as="content" />
+        </block>
+    </adminhtml_iparcel_sync_ajax>
+    <adminhtml_iparcel_sync_ajax_catalog>
+        <reference name="head">
+            <action method="setTitle"><title>i-parcel Catalog Upload</title></action>
+        </reference>
+        <reference name="content">
+            <block type="core/template" name="catalog.sync" template="iparcel/sync/ajax/catalog.phtml"/>
+        </reference>
+    </adminhtml_iparcel_sync_ajax_catalog>
+    <adminhtml_iparcel_sync_ajax_checkitems>
+        <reference name="head">
+            <action method="setTitle"><title>i-parcel Check Items</title></action>
+        </reference>
+        <reference name="content">
+            <block type="core/template" name="checkitems.sync" template="iparcel/sync/ajax/checkitems.phtml" />
+        </reference>
+    </adminhtml_iparcel_sync_ajax_checkitems>
+
+    <adminhtml_sales_order_view>
+        <reference name="order_totals">
+            <block type="adminhtml/sales_order_totals_item" name="iparcel_order_totals_duty" template="iparcel/order/totals/duty.phtml"></block>
+            <block type="adminhtml/sales_order_totals_item" name="iparcel_order_totals_tax" template="iparcel/order/totals/tax.phtml"></block>
+        </reference>
+    </adminhtml_sales_order_view>
+    <adminhtml_sales_order_invoice_new>
+        <reference name="invoice_totals">
+            <block type="adminhtml/sales_order_totals_item" name="iparcel_order_totals_duty" template="iparcel/order/totals/duty.phtml"></block>
+            <block type="adminhtml/sales_order_totals_item" name="iparcel_order_totals_tax" template="iparcel/order/totals/tax.phtml"></block>
+        </reference>
+    </adminhtml_sales_order_invoice_new>
+    <adminhtml_sales_order_invoice_updateqty>
+        <reference name="invoice_totals">
+            <block type="adminhtml/sales_order_totals_item" name="iparcel_order_totals_duty" template="iparcel/order/totals/duty.phtml"></block>
+            <block type="adminhtml/sales_order_totals_item" name="iparcel_order_totals_tax" template="iparcel/order/totals/tax.phtml"></block>
+        </reference>
+    </adminhtml_sales_order_invoice_updateqty>
+    <adminhtml_sales_order_invoice_view>
+        <reference name="invoice_totals">
+            <block type="adminhtml/sales_order_totals_item" name="iparcel_order_totals_duty" template="iparcel/order/totals/duty.phtml"></block>
+            <block type="adminhtml/sales_order_totals_item" name="iparcel_order_totals_tax" template="iparcel/order/totals/tax.phtml"></block>
+        </reference>
+    </adminhtml_sales_order_invoice_view>
+    <adminhtml_sales_order_creditmemo_new>
+        <reference name="creditmemo_totals">
+            <block type="adminhtml/sales_order_totals_item" name="iparcel_order_totals_duty" template="iparcel/order/totals/duty.phtml"></block>
+            <block type="adminhtml/sales_order_totals_item" name="iparcel_order_totals_tax" template="iparcel/order/totals/tax.phtml"></block>
+        </reference>
+    </adminhtml_sales_order_creditmemo_new>
+    <adminhtml_sales_order_creditmemo_updateqty>
+        <reference name="creditmemo_totals">
+            <block type="adminhtml/sales_order_totals_item" name="iparcel_order_totals_duty" template="iparcel/order/totals/duty.phtml"></block>
+            <block type="adminhtml/sales_order_totals_item" name="iparcel_order_totals_tax" template="iparcel/order/totals/tax.phtml"></block>
+        </reference>
+    </adminhtml_sales_order_creditmemo_updateqty>
+    <adminhtml_sales_order_creditmemo_view>
+        <reference name="creditmemo_totals">
+            <block type="adminhtml/sales_order_totals_item" name="iparcel_order_totals_duty" template="iparcel/order/totals/duty.phtml"></block>
+            <block type="adminhtml/sales_order_totals_item" name="iparcel_order_totals_tax" template="iparcel/order/totals/tax.phtml"></block>
+        </reference>
+    </adminhtml_sales_order_creditmemo_view>
+</layout>
