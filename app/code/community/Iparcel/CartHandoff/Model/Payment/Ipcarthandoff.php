@@ -30,6 +30,14 @@ class Iparcel_CartHandoff_Model_Payment_Ipcarthandoff extends Iparcel_All_Model_
         $session = Mage::getSingleton('checkout/session');
         $quote = $session->getQuote();
 
+        // Check to make sure Amazon or PayPal isn't being used for this order
+        $carrierModel = Mage::getModel('iparcel/carrier_iparcel');
+        if ($carrierModel->_isAmazonPayments()
+            || $carrierModel->_isPayPalPayment()
+        ) {
+            return false;
+        }
+
         // If $quote and $shippingAddress are objects
         if (is_object($quote)) {
             $shippingAddress = $quote->getShippingAddress();

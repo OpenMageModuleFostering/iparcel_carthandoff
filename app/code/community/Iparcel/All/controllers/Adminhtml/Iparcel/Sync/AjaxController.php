@@ -15,13 +15,15 @@ class Iparcel_All_Adminhtml_Iparcel_Sync_AjaxController extends Mage_Adminhtml_C
      */
     protected function catalogJsonInitAction()
     {
-        $step = Mage::getStoreConfig('catalog_mapping/upload/step');
         $count = Mage::getModel('catalog/product')
-                ->getCollection()
-                ->getSize()
-            - floor(Mage::getStoreConfig('catalog_mapping/upload/offset')
-                / $step
-            ) * $step;
+               ->getCollection()
+               ->addAttributeToFilter(
+                   'type_id', array('in' =>
+                                    array(
+                                        'simple',
+                                        'configurable'
+                                    )))
+               ->getSize();
 
         $response = array(
             'count' => $count
@@ -43,25 +45,27 @@ class Iparcel_All_Adminhtml_Iparcel_Sync_AjaxController extends Mage_Adminhtml_C
     {
         $params = $this->getRequest()->getParams();
 
-        $page = $params['page'];
-        $step = $params['step'];
-
-        $offset = Mage::getStoreConfig('catalog_mapping/upload/offset');
-        $page += floor($offset / $step);
+        $page = (int) $params['page'];
+        $step = (int) $params['step'];
 
         $productCollection = Mage::getModel('catalog/product')
             ->getCollection()
             ->setPageSize($step)
             ->setCurPage($page);
-        /* var $productCollection Mage_Catalog_Model_Resource_Product_Collection */
+        /** @var $productCollection Mage_Catalog_Model_Resource_Product_Collection */
 
         $n = Mage::helper('iparcel/api')->submitCatalog($productCollection);
+        $skuList = array(
+            $productCollection->getFirstItem()->getSku(),
+            $productCollection->getLastItem()->getSku()
+        );
 
         if ($n != -1) {
             $response = array(
                 'page' => $page,
                 'step' => $step,
-                'uploaded' => $n
+                'uploaded' => $n,
+                'SKUs' => $skuList
             );
         } else {
             $response = array(

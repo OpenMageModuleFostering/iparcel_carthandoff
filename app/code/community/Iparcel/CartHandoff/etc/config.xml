@@ -2,7 +2,7 @@
 <config>
     <modules>
         <Iparcel_CartHandoff>
-            <version>1.6.0</version>
+            <version>1.6.1</version>
         </Iparcel_CartHandoff>
     </modules>
     <global>
@@ -28,7 +28,6 @@
                 <rewrite>
                     <product_type_price>Iparcel_CartHandoff_Model_Catalog_Product_Type_Price</product_type_price>
                     <product_type_configurable_price>Iparcel_CartHandoff_Model_Catalog_Product_Type_Configurable_Price</product_type_configurable_price>
-                    <layer>Iparcel_CartHandoff_Model_Catalog_Layer</layer>
                 </rewrite>
             </catalog>
             <payment>
@@ -148,6 +147,10 @@
                 <checkitems_cache_lifetime>0</checkitems_cache_lifetime>
                 <checkitems_chunk_size>100</checkitems_chunk_size>
             </international_customer>
+            <api>
+		<timeout>10</timeout>
+                <timeout_message>Unable to communicate with UPS i-parcel. Please try again later.</timeout_message>
+            </api>
         </iparcel>
     </default>
 </config>

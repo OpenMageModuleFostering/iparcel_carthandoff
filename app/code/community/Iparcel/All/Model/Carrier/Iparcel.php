@@ -138,9 +138,16 @@ class Iparcel_All_Model_Carrier_Iparcel extends Iparcel_All_Model_Carrier_Abstra
      *
      * @return boolean
      */
-    private function _isAmazonPayments()
+    public function _isAmazonPayments()
     {
-        return $this->_paymentMethodContains('amazon');
+        $session = Mage::getSingleton('checkout/session');
+
+        $amazonReference = $session->getData('amazon_order_reference_id');
+        if (!is_null($amazonReference) || $amazonReference != "") {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -148,7 +155,7 @@ class Iparcel_All_Model_Carrier_Iparcel extends Iparcel_All_Model_Carrier_Abstra
      *
      * @return boolean
      */
-    private function _isPayPalPayment()
+    public function _isPayPalPayment()
     {
         return $this->_paymentMethodContains('paypal');
     }

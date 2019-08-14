@@ -23,23 +23,29 @@ class Iparcel_All_Helper_Api
     /** @var string URL for the Quote endpoint */
     protected $_quote = 'https://webservices.i-parcel.com/api/Quote';
 
+    /** @var int Timeout in seconds for REST requests */
+    protected $_timeout = 15;
+
     /**
      * Send POST requests to the REST API
      *
      * @param string $post POST Data to send
      * @param string $url REST API URL to send POST data to
      * @param array $header Array of headers to attach to the request
+     * @param int $timeout Timeout in seconds
      * @return string Response from the POST request
      */
-    protected function _rest($post, $url, array $header)
+    protected function _rest($post, $url, array $header, $timeout = 0)
     {
         $curl = curl_init($url);
 
-        $timeout = 15;
-        if ($timeout) {
-            curl_setopt($curl, CURLOPT_TIMEOUT, $timeout);
+        $throwExceptionOnTimeout = true;
+        if (!$timeout || !is_int($timeout) || $timeout == 0) {
+            $timeout = $this->_timeout;
+            $throwExceptionOnTimeout = false;
         }
 
+        curl_setopt($curl, CURLOPT_TIMEOUT, $timeout);
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($curl, CURLOPT_POST, true);
@@ -48,6 +54,12 @@ class Iparcel_All_Helper_Api
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 
         $response = curl_exec($curl);
+
+        if (curl_errno($curl) == 28 // CURLE_OPERATION_TIMEDOUT
+            && $throwExceptionOnTimeout
+        ) {
+            throw new Exception;
+        }
 
         curl_close($curl);
 
@@ -61,14 +73,16 @@ class Iparcel_All_Helper_Api
      *
      * @param string $json Data to be JSON encoded and sent to the API
      * @param string $url REST API URL to send POST data to
+     * @param int Timeout value in seconds
      * @return string Response from the POST request
      */
-    protected function _restJSON($json, $url)
+    protected function _restJSON($json, $url, $timeout = 0)
     {
         return $this->_rest(
             json_encode($json),
             $url,
-            array('Content-Type: text/json')
+            array('Content-Type: text/json'),
+            $timeout
         );
     }
 

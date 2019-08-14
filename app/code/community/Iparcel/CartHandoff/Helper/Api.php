@@ -193,7 +193,18 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
         }
         $request['ItemDetailsList'] = $itemDetailsList;
 
-        $response = $this->_restJSON($request, $this->_setCheckout);
+        try {
+            $response = $this->_restJSON(
+                $request,
+                $this->_setCheckout,
+                $this->_getTimeout()
+            );
+        } catch (Exception $e) {
+            Mage::getSingleton('checkout/session')
+                ->addError($this->_getTimeoutMessage());
+
+            return false;
+        }
 
         // Log request and response
         Mage::getModel('iparcel/log')
@@ -225,7 +236,20 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
             'tx' => $transactionId
         );
 
-        $response = $this->_restJSON($request, $this->_getCheckoutDetails);
+        try {
+            $response = $this->_restJSON(
+                $request,
+                $this->_getCheckoutDetails,
+                $this->_getTimeout()
+            );
+        } catch (Exception $e) {
+            $return = array(
+                'status' => 0,
+                'message' => $this->_getTimeoutMessage()
+            );
+
+            return (object) $return;
+        }
 
         // Log request and response
         Mage::getModel('iparcel/log')
@@ -839,5 +863,25 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
         );
 
         return (int) $chunkSize;
+    }
+
+    /**
+     * Returns the configured timeout setting
+     *
+     * @return int
+     */
+    private function _getTimeout()
+    {
+        return (int) Mage::getStoreConfig('iparcel/api/timeout');
+    }
+
+    /**
+     * Returns configured timeout message
+     *
+     * @return string
+     */
+    private function _getTimeoutMessage()
+    {
+        return (string) Mage::getStoreConfig('iparcel/api/timeout_message');
     }
 }

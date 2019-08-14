@@ -1,4 +1,22 @@
-*{margin: 0; padding: 0;}
-#starting{display: block;}
-#error{background-color: #c33; color: #fff;}
-*[id="page:main-container"] div{background-color: #8cd9cd; margin: 5px 0; padding: 5px; font-family: sans-serif; font-size: 12px; display: none;}
+* {
+    margin: 0;
+    padding: 0;
+}
+
+#message {
+    display: block;
+}
+
+*[id="page:main-container"] div {
+    background-color: #8cd9cd;
+    margin: 5px 0;
+    padding: 5px;
+    font-family: sans-serif;
+    font-size: 12px;
+    display: none;
+}
+
+#log-area {
+    width: 100%;
+    height: 150px;
+}

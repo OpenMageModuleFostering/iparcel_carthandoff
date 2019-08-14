@@ -45,4 +45,12 @@
             <block type="ipcarthandoff/button" name="cart_sidebar.extra_actions.ipcarthandoff" template="iparcel/carthandoff/button.phtml" />
         </reference>
     </default>
+
+    <!-- Remove product page block to prevent AJAX call to /configurable -->
+    <catalog_product_view>
+	<reference name="head">
+	    <action method="unsetChild"><name>iparcel_post</name></action>
+	    <action method="unsetChild"><name>iparcel_sku</name></action>
+	</reference>
+    </catalog_product_view>
 </layout>

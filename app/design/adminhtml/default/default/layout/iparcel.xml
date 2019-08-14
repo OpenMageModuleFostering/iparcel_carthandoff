@@ -32,7 +32,7 @@
             <action method="setTitle"><title>i-parcel Catalog Upload</title></action>
         </reference>
         <reference name="content">
-            <block type="core/template" name="catalog.sync" template="iparcel/sync/ajax/catalog.phtml"/>
+            <block type="iparcel/adminhtml_iparcel_sync" name="iparcel_catalog_sync" template="iparcel/sync/ajax/catalog.phtml"/>
         </reference>
     </adminhtml_iparcel_sync_ajax_catalog>
 

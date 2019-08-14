@@ -1,25 +1,21 @@
 <?php
 /**
- * @category	design
- * @package		Iparcel_All
- * @author		Bobby Burden <bburden@i-parcel.com>
- * @class		Mage_Core_Block_Template
+ * @category    design
+ * @package     Iparcel_All
+ * @author      Bobby Burden <bburden@i-parcel.com>
+ * @class       Mage_Core_Block_Template
  */
 $initUrl = Mage::helper('adminhtml')->getUrl('adminhtml/iparcel_sync_ajax/catalogJsonInit');
 $uploadUrl = Mage::helper('adminhtml')->getUrl('adminhtml/iparcel_sync_ajax/catalogJsonUpload');
 ?>
-<div id="starting">
-<p>Starting catalog synchronization</p>
+<?php echo $this->getStartButton(); ?>
+
+<div id="message">
+<p>Click "Start" to begin the Catalog Sync</p>
 </div>
-<div id="sync">
-<p><span>0</span> items from <span>0</span> uploaded</p>
-</div>
-<div id="end">
-<p><span>0</span> items from <span>0</span> successfully uploaded</p>
-<p>There was <span>0</span> errors when uploading catalog</p>
-</div>
+<textarea id="log-area" wrap="off"></textarea>
 <script type="text/javascript">
-    jQuery(document).ready(function() {
-        var sync = new iparcelSync.sync('<?php echo $initUrl ?>', '<?php echo $uploadUrl ?>', <?php echo Mage::getStoreConfig('catalog_mapping/upload/step'); ?>);
-    })
+jQuery(document).ready(function() {
+    window.catalogSync = new iparcelSync('<?php echo $initUrl ?>', '<?php echo $uploadUrl ?>', <?php echo Mage::getStoreConfig('catalog_mapping/upload/step'); ?>, jQuery('.middle div button')[0]);
+})
 </script>

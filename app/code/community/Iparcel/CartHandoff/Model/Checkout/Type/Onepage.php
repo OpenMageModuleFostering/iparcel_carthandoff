@@ -16,7 +16,6 @@ class Iparcel_CartHandoff_Model_Checkout_Type_Onepage extends Mage_Checkout_Mode
      */
     public function savePayment($data)
     {
-        $quote = $this->getQuote();
         $paymentModel = Mage::getModel('ipcarthandoff/payment_ipcarthandoff');
 
         if ($paymentModel->canUseCheckout()) {
@@ -25,5 +24,23 @@ class Iparcel_CartHandoff_Model_Checkout_Type_Onepage extends Mage_Checkout_Mode
         }
 
         return parent::savePayment($data);
+    }
+
+    /**
+     * Remove `amazon_order_reference_id` from the user's session
+     *
+     * This is necessary so that rates can be returned for non-Amazon Payments
+     * checkout methods, but hidden when Amazon sets a reference ID. Amazon will
+     * set a reference ID during the address selection step of the Amazon
+     * checkout flow.
+     *
+     * @return this
+     */
+    public function initCheckout()
+    {
+        $session = $this->getCheckout();
+        $session->unsetData('amazon_order_reference_id');
+
+        return parent::initCheckout();
     }
 }
