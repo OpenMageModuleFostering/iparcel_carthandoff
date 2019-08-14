@@ -111,11 +111,11 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
             if ($item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_SIMPLE) {
                 // If no price is attached to this item, load it from the parent item
                 $price = $item->getProduct()->getPrice();
-                $qty = $item->getQty();
+                $qty = $item->getTotalQty();
                 if ($price == '0' || is_null($price)) {
                     $parentItem = $item->getParentItem();
                     $price = $parentItem->getPrice();
-                    $qty = $parentItem->getQty();
+                    $qty = $parentItem->getTotalQty();
                 }
 
                 // TODO: Add logic to handle simple products with custom options

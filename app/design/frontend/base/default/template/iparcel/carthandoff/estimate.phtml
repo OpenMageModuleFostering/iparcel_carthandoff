@@ -1,0 +1,20 @@
+<?php
+$countryCode = $this->getCountryCode();
+?>
+<script type="text/javascript">
+    var countrySelect = $('country');
+    countrySelect.setValue('<?php echo $countryCode; ?>');
+
+    // Add ability to trigger change event for country select
+    if (document.createEvent)
+    {
+        var event = document.createEvent('HTMLEvents');
+        event.initEvent('change', true, true);
+
+        countrySelect.dispatchEvent(event);
+    }
+
+    if (countrySelect.fireEvent) {
+        countrySelect.fireEvent('onChange');
+    }
+</script>

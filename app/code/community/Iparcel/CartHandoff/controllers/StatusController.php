@@ -20,6 +20,13 @@ class Iparcel_CartHandoff_StatusController extends Mage_Core_Controller_Front_Ac
             $status = $paymentModel->processStatusUpdate($post);
             if ($status === true) {
                 $this->getResponse()->setHeader('HTTP/1.1', '200 OK');
+
+                // Find the Order Increment ID for the status update
+                $order = Mage::helper('ipcarthandoff')->loadOrderByTrackingNumber(
+                    $post['trackingnumber']
+                );
+                $this->getResponse()->setBody($order->getIncrementId());
+
                 return;
             } else {
                 $this->getResponse()->setBody($status);
