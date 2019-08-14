@@ -86,6 +86,16 @@ class Iparcel_All_Helper_Api
         );
     }
 
+    protected function _getProductAttribute($product, $code) {
+        $attribute = Mage::getModel('eav/entity_attribute')
+            ->load(Mage::getStoreConfig('catalog_mapping/attributes/' . $code));
+        if ($attribute->getData()) {
+            $code = $attribute->getAttributeCode();
+        }
+        $val = strip_tags(($product->getData($code) && $product->getAttributeText($code)) ? $product->getAttributeText($code) : $product->getData($code));
+        return $val;
+    }
+
     /**
      * Cancels shipments via the Web Service API
      *
@@ -215,27 +225,27 @@ class Iparcel_All_Helper_Api
             $itemProduct = Mage::getModel('catalog/product')->load($item->getProductId());
             /* var $itemProduct Mage_Catalog_Model_Product */
             //get item price
-            $itemPrice = (float)$item->getFinalPrice() ?: (float)$item->getPrice();
+            $itemPrice = (float)$this->_getProductAttribute($item->getProduct(), 'final_price') ?: (float)$this->_getProductAttribute($item->getProduct(), 'price');
             // if not price and item has parent (is configurable)
             if (!$itemPrice && ($parent=$item->getParentItem())) {
                 // get parent price
-                $itemPrice = (float)$parent->getFinalPrice() ?: (float)$parent->getPrice();
+                $itemPrice = (float)$this->_getProductAttribute($parent->getProduct(), 'final_price') ?: (float)$this->_getProductAttribute($parent->getProduct(), 'price');
             }
             // if still not price
             if (!$itemPrice) {
                 // get product price
-                $itemPrice = (float)$item->getProduct()->getPrice();
+                $itemPrice = (float)$this->_getProductAttribute($item->getProduct(), 'price');
             }
             // if product isn't virtual and is configurable or downloadable
             if ($item["is_virtual"] == false && !in_array($itemProduct->getTypeId(), array('configurable','downloadable'))) {
                 // add line item node
                 $lineItem = array();
                 $lineItem['SKU'] = $item->getSku();
-                $lineItem['CustWeightLbs'] = (float)$item->getWeight();
                 $lineItem['ValueUSD'] = $itemPrice;
-                $lineItem['CustLengthInches'] = (float)$item->getLength();
-                $lineItem['CustWidthInches'] = (float)$item->getWidth();
-                $lineItem['CustHeightInches'] = (float)$item->getHeight();
+                $lineItem['CustLengthInches'] = (float)$this->_getProductAttribute($item->getProduct(), 'length');
+                $lineItem['CustHeightInches'] = (float)$this->_getProductAttribute($item->getProduct(), 'height');
+                $lineItem['CustWidthInches'] = (float)$this->_getProductAttribute($item->getProduct(), 'width');
+                $lineItem['CustWeightLbs'] = (float)$this->_getProductAttribute($item->getProduct(), 'weight');
                 $lineItem['Quantity'] = $item->getTotalQty();
                 $lineItem['ValueShopperCurrency'] = $itemPrice;
                 $lineItem['ShopperCurrency'] = Mage::app()->getStore()->getCurrentCurrencyCode();
@@ -247,13 +257,18 @@ class Iparcel_All_Helper_Api
         $totals = $quote->getTotals();
         $discount = 0;
         if (isset($totals['discount']) && $totals['discount']->getValue()) {
-            $discount = -1 * $totals['discount']->getValue();
+            $discount = abs($totals['discount']->getValue());
         }
+        if(isset($totals['ugiftcert']) && $totals['ugiftcert']->getValue()) {
+            $discount = $discount + abs($totals['ugiftcert']->getValue());
+        }
+
         $json['OtherDiscount'] = $discount;
         $json['OtherDiscountCurrency'] = $quote->getQuoteCurrencyCode();
         $json['ParcelID'] = 0;
         $json['SessionID'] = '';
         $json['key'] = Mage::helper('iparcel')->getGuid();
+
         $log->setRequest(json_encode($json));
         $response = $this->_restJSON($json, $this->_quote);
         $log->setResponse($response);
@@ -369,27 +384,27 @@ class Iparcel_All_Helper_Api
                 $itemProduct = Mage::getModel('catalog/product')->load($item->getOrderItem()->getProductId());
             }
             //get item price
-            $itemPrice = (float)$item->getFinalPrice() ?: (float)$item->getPrice();
+            $itemPrice = (float)$this->_getProductAttribute($item->getProduct(), 'final_price') ?: (float)$this->_getProductAttribute($item->getProduct(), 'price');
             // if not price and item has parent (is configurable)
             if (!$itemPrice && ($parent=$item->getParentItem())) {
                 // get parent price
-                $itemPrice = (float)$parent->getFinalPrice() ?: (float)$parent->getPrice();
+                $itemPrice = (float)$this->_getProductAttribute($parent->getProduct(), 'final_price') ?: (float)$this->_getProductAttribute($parent->getProduct(), 'price');
             }
             // if still not price
             if (!$itemPrice) {
                 // get product price
-                $itemPrice = (float)$item->getProduct()->getPrice();
+                $itemPrice = (float)$this->_getProductAttribute($item->getProduct(), 'price');
             }
             // if product isn't virtual and is configurable or downloadable
             if ($item["is_virtual"] == false && !in_array($itemProduct->getTypeId(), array('configurable','downloadable'))) {
                 // add line item node
                 $lineItem = array();
                 $lineItem['SKU'] = $item->getSku();
-                $lineItem['CustWeightLbs'] = (float)$item->getWeight();
                 $lineItem['ValueUSD'] = $itemPrice;
-                $lineItem['CustLengthInches'] = (float)$item->getLength();
-                $lineItem['CustWidthInches'] = (float)$item->getWidth();
-                $lineItem['CustHeightInches'] = (float)$item->getHeight();
+                $lineItem['CustLengthInches'] = (float)$this->_getProductAttribute($item->getProduct(), 'length');
+                $lineItem['CustHeightInches'] = (float)$this->_getProductAttribute($item->getProduct(), 'height');
+                $lineItem['CustWidthInches'] = (float)$this->_getProductAttribute($item->getProduct(), 'width');
+                $lineItem['CustWeightLbs'] = (float)$this->_getProductAttribute($item->getProduct(), 'weight');
                 $lineItem['Quantity'] = (float)$item->getQty();
                 $lineItem['ValueShopperCurrency'] = $itemPrice;
                 $lineItem['ShopperCurrency'] = Mage::app()->getStore()->getCurrentCurrencyCode();
@@ -585,16 +600,16 @@ class Iparcel_All_Helper_Api
 
             $price = null;
             // if it's simple product and config is to get parent's price
-            if ($product->getTypeId() == 'simple' && Mage::getStoreConfig('catalog_mapping/attributes/price') == Iparcel_All_Model_System_Config_Source_Catalog_Mapping_Configurable_Price::CONFIGURABLE) {
+            if ($product->getTypeId() == 'simple' && Mage::getStoreConfig('catalog_mapping/attributes/price_type') == Iparcel_All_Model_System_Config_Source_Catalog_Mapping_Configurable_Price::CONFIGURABLE) {
                 // get parentIds
                 $parentIds = Mage::getModel('catalog/product_type_grouped')->getParentIdsByChild($product->getId()) ?: Mage::getModel('catalog/product_type_configurable')->getParentIdsByChild($product->getId());
                 // get price
-                $price = $parentIds ? Mage::getModel('catalog/product')->load($parentIds[0])->getPrice() : $product->getPrice();
+                $price = $parentIds ? $this->_getProductAttribute(Mage::getModel('catalog/product')->load($parentIds[0]), 'price') : $this->_getProductAttribute($product, 'price');
             }
             // if there's no price
             if (!$price) {
                 //get current product's price
-                $price = $product->getPrice();
+                $price = $this->_getProductAttribute($product, 'price');
             }
 
             $item['CountryOfOrigin'] = (string)$product->getCountryOfManufacture();
@@ -608,15 +623,16 @@ class Iparcel_All_Helper_Api
                 $item['HSCodeUS'] = '';
             }
 
-            $item['Height'] = (float)$product->getHeight();
-            $item['Length'] = (float)$product->getLength();
+            $item['Length'] = (float)$this->_getProductAttribute($product, 'length');
+            $item['Height'] = (float)$this->_getProductAttribute($product, 'height');
+            $item['Width'] = (float)$this->_getProductAttribute($product, 'width');
+            $item['Weight'] = (float)$this->_getProductAttribute($product, 'weight');
+
             $item['ProductURL'] = $product->getUrlPath();
             $item['SKN'] = '';
             if ($code = $shipAlone->getAttributeCode()) {
                 $item['ShipAlone'] = $product->getAttributeText($code) == 'Yes' ? true : false;
             }
-            $item['Width'] = (float)$product->getWidth();
-            $item['Weight'] = (float)$product->getWeight();
 
             // Detect and handle a Simple Product with Custom Options
             if ($product->getTypeId() == Mage_Catalog_Model_Product_Type::TYPE_SIMPLE && $product->getHasOptions()) {

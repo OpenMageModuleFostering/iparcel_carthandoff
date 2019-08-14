@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <layout version="0.1.0">
     <checkout_cart_index>
+        <reference name="head">
+            <action method="addJs">
+                <name>iparcel/cart-buttons.js</name>
+            </action>
+        </reference>
         <reference name="checkout.cart.top_methods">
             <block type="ipcarthandoff/button" name="checkout.cart.methods.ipcarthandoff.top" before="-" template="iparcel/carthandoff/button.phtml" />
         </reference>

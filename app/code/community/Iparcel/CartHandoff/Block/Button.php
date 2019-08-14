@@ -71,9 +71,9 @@ class Iparcel_CartHandoff_Block_Button extends Mage_Core_Block_Template
         switch ($nameInLayout) {
             case "topcart.extra_actions.ipcarthandoff":
             case "cart_sidebar.extra_actions.ipcarthandoff":
-                return "padding: 10px 0 10px 0;";
+                return "padding: 10px 0 10px 0; display: none;";
             default:
-                return "";
+                return "display: none;";
         }
 
         return "";

@@ -104,8 +104,13 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
             'day_phone_b' => $phoneNumber,
         );
         $totals = $quote->getTotals();
+
         if(isset($totals['discount'])) {
-            $request['discount_amount_cart'] = $totals['discount']->getValue(); //Ex: -50
+            $request['discount_amount_cart'] = abs($totals['discount']->getValue());
+        }
+
+        if(isset($totals['ugiftcert'])) {
+            $request['discount_amount_cart'] += abs($request['discount_amount_cart']) + abs($totals['ugiftcert']->getValue());
         }
 
         // Add items to request

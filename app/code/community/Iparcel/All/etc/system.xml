@@ -526,7 +526,7 @@
                             <show_in_store>0</show_in_store>
                             <comment>Only boolean attributes</comment>
                         </shipalone>
-                        <price translate="label">
+                        <price_type translate="label">
                             <label>Price Type</label>
                             <frontend_type>select</frontend_type>
                             <source_model>iparcel/system_config_source_catalog_mapping_configurable_price</source_model>
@@ -535,6 +535,51 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
                             <comment>Price type for configurable products</comment>
+                        </price_type>
+                        <height translate="label">
+                            <label>Height</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>iparcel/system_config_source_catalog_product_attribute</source_model>
+                            <sort_order>47</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </height>
+                        <width translate="label">
+                            <label>Width</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>iparcel/system_config_source_catalog_product_attribute</source_model>
+                            <sort_order>47</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </width>
+                        <weight translate="label">
+                            <label>Weight</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>iparcel/system_config_source_catalog_product_attribute</source_model>
+                            <sort_order>47</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </weight>
+                        <length translate="label">
+                            <label>Length</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>iparcel/system_config_source_catalog_product_attribute</source_model>
+                            <sort_order>47</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </length>
+                        <price translate="label">
+                            <label>Price</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>iparcel/system_config_source_catalog_product_attribute</source_model>
+                            <sort_order>47</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
                         </price>
                     </fields>
                 </attributes>

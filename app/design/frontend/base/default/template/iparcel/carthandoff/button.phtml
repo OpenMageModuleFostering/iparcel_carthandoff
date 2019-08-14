@@ -4,6 +4,8 @@
  *
  * @var $this Iparcel_CartHandoff_Block_Button
  */
+
+$cartHandoff_hideCheckout = Mage::getStoreConfig('payment/ipcarthandoff/hide_proceed_to_checkout') ? 'true' : 'false';
 ?>
 <?php if ($this->shouldDisplay()): ?>
 <p class="ipcarthandoff-button" style="<?php echo $this->getStyle() ?>">
@@ -12,3 +14,6 @@
     </a>
 </p>
 <?php endif; ?>
+<script type="text/javascript">
+    cartHandoff_hideCheckout = <?php echo (string) $cartHandoff_hideCheckout; ?>;
+</script>

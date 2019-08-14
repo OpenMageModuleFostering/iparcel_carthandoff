@@ -2,7 +2,7 @@
 <config>
     <modules>
         <Iparcel_All>
-            <version>1.2.0</version>
+            <version>1.2.1</version>
         </Iparcel_All>
     </modules>
     <frontend>
@@ -281,7 +281,7 @@
                 <offset>0</offset>
             </upload>
             <attributes>
-                <price>1</price>
+                <price_type>1</price_type>
             </attributes>
         </catalog_mapping>
         <carriers>
