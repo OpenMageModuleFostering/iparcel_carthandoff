@@ -12,6 +12,7 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
     protected $_session = null;
     protected $_quote = null;
     protected $iparcelLogfile = 'iparcel_carthandoff.log';
+    protected $noValidItems = 'NO-VALID-ITEMS';
 
     /**
      * Grab user's checkout session and quote
@@ -53,12 +54,50 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
         }
 
         $apiHelper = Mage::helper('ipcarthandoff/api');
-        $transactionNumber = $apiHelper->setCheckout($this->_quote);
+        $response = $apiHelper->setCheckout($this->_quote);
 
+        $transactionNumber = $response->tx;
         if ($transactionNumber == false) {
             $this->_session->addError("There was a problem communicating to UPS i-parcel");
             $this->getResponse()->setRedirect(Mage::getUrl('checkout/cart'));
             return;
+        }
+
+        // If the TX returns a No Eligble Items error, report that and return
+        // to the cart page.
+        if ($transactionNumber == $this->noValidItems) {
+            $this->_session->addError("None of the items in your cart are eligible for international shipping.");
+            $this->getResponse()->setRedirect(Mage::getUrl('checkout/cart'));
+            return;
+        }
+
+        // Check for InvalidItems in the response
+        $invalidItems = $response->InvalidItems;
+        if (count($invalidItems)) {
+            $invalidSkus = array();
+            foreach ($invalidItems as $item) {
+                $invalidSkus[$item->item_number] = $item->item_name;
+            }
+
+            // If checkout with inelligible items is disabled, add errors to
+            // the cart and redirect back to the cart page.
+            if (!Mage::getStoreConfig('payment/ipcarthandoff/allow_partial_cart')) {
+                foreach ($invalidSkus as $sku => $name) {
+                    $this->_session->addError(
+                        "'$name' is not available for international shipping"
+                    );
+                }
+                $this->getResponse()->setRedirect(Mage::getUrl('checkout/cart'));
+                return;
+            }
+        }
+
+        // Ensure that the CartHandoff payment method is configured for this quote
+        $cartHandoffPMC = Mage::helper('ipcarthandoff')->getPaymentMethodCode();
+        if ($this->_quote->getPayment()->getMethod() != $cartHandoffPMC) {
+            $cartHandoffPM = Mage::getModel('ipcarthandoff/payment_ipcarthandoff');
+            $this->_quote->getPayment()->setMethod($cartHandoffPM->getCode());
+            $this->_quote->save();
         }
 
         // With a transaction ID established, redirect the user to checkout
@@ -105,25 +144,7 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
      */
     public function paymentAction()
     {
-        $this->_clearMultiShip($this->_quote);
-
-        $apiHelper = Mage::helper('ipcarthandoff/api');
-        $cancelUrl = Mage::getUrl('ipcarthandoff/handoff/cancel');
-        $returnUrl = mage::getUrl('ipcarthandoff/handoff/paymentReturn');
-        $transactionNumber = $apiHelper->setCheckout($this->_quote, $cancelUrl, $returnUrl);
-
-        if ($transactionNumber == false) {
-            $this->_session->addError("There was a problem communicating to UPS i-parcel");
-            $this->getResponse()->setRedirect(Mage::getUrl('checkout/cart'));
-            return;
-        }
-
-        // With a transaction ID established, redirect the user to checkout
-        $this->getResponse()->setRedirect(
-            Mage::helper('ipcarthandoff')->getCheckoutUrl($transactionNumber)
-        );
-
-        return;
+        return $this->beginAction();
     }
 
     /**
@@ -295,8 +316,8 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
                 $session->getQuote(), $response
             );
         } catch (Exception $e) {
-            Mage::logException($e);
             // This catches any exceptions thrown during order creation.
+            Mage::logException($e);
 
             $this->logToFile(
                 '_buildOrder(): Failed to build order for tx ' . $txId

@@ -9,7 +9,7 @@ toggleCountryOfOrigin = function($altEnabled, $corObject) {
     } else {
         $corObject.disable();
     }
-}
+};
 
 document.observe('dom:loaded', function(event) {
     $alternateEnabledObject = $$('#carriers_i-parcel_choose_domestic').first();
@@ -17,7 +17,7 @@ document.observe('dom:loaded', function(event) {
     if (typeof($alternateEnabledObject) === 'object') {
         toggleCountryOfOrigin($alternateEnabledObject, $countryOfOriginObject);
         $alternateEnabledObject.observe('change', function(event) {
-            toggleCountryOfOrigin($(this), $countryOfOriginObject)
+            toggleCountryOfOrigin($(this), $countryOfOriginObject);
         });
     }
 });

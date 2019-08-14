@@ -29,7 +29,7 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
      * @param Mage_Sales_Model_Quote $quote
      * @param string $cancelUrl URL to use when cancelling an order
      * @param string $returnUrl URL to use once the order is submitted.
-     * @return mixed Transaction Number, in case of error, returns false
+     * @return bool|object StdObject, or in case of error, returns false
      */
     public function setCheckout(
         Mage_Sales_Model_Quote $quote,
@@ -227,7 +227,7 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
         $response = json_decode($response);
 
         if (is_object($response) && property_exists($response, 'tx')) {
-            return $response->tx;
+            return $response;
         }
 
         return false;
@@ -707,8 +707,22 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
         $order->setBillingAddress($convert->addressToOrderAddress($quote->getBillingAddress()));
         $order->setShippingAddress($convert->addressToOrderAddress($quote->getShippingAddress()));
 
+        // Build up list of items that were removed from the quote by i-parcel
+        $ineligbleItems = array();
+        $invalidItems = $response->InvalidItems;
+        foreach ($invalidItems as $invalidItem) {
+            $ineligbleItems[] = $invalidItem->item_number;
+        }
+
         $items = $quote->getAllItems();
         foreach ($items as $item) {
+            if (in_array($item->getSku(), $ineligbleItems)) {
+                // Skip this item, as it was marked as "Invalid" in the
+                // GetCheckoutDetails response
+                $quote->removeItem($item->getId());
+                continue;
+            }
+
             $orderItem = $convert->itemToOrderItem($item);
             $productOptions = $item->getProduct()->getTypeInstance(true)->getOrderOptions($item->getProduct());
             if ($productOptions) {

@@ -100,7 +100,15 @@ class Iparcel_All_Helper_Api
         if ($attribute->getData()) {
             $code = $attribute->getAttributeCode();
         }
-        $val = strip_tags(($product->getData($code) && $product->getAttributeText($code)) ? $product->getAttributeText($code) : $product->getData($code));
+
+        // Special case for `special_price` code
+        if ($code == 'special_price') {
+            // Grabs the special price if we are in the applicable date range
+            $val = $product->getFinalPrice();
+        } else {
+            $val = strip_tags(($product->getData($code) && $product->getAttributeText($code)) ? $product->getAttributeText($code) : $product->getData($code));
+        }
+
         return $val;
     }
 
@@ -488,8 +496,6 @@ class Iparcel_All_Helper_Api
         $items = array();
         $items['key'] = Mage::helper('iparcel')->getGuid();
 
-        $skus = $items['SKUs'] = array();
-
         foreach ($products as $product) {
             /** @var Mage_Catalog_Model_Product $product */
             $product = Mage::getModel('catalog/product')->load($product->getId());
@@ -522,6 +528,21 @@ class Iparcel_All_Helper_Api
             }
 
             $price = null;
+
+            // Finds the price for simple products with configurable parents
+            $configurableParent = Mage::getModel('catalog/product_type_configurable')
+                ->getParentIdsByChild($product->getId());
+            if (count($configurableParent)) {
+                $configurableParent = Mage::getModel('catalog/product')->load(
+                    $configurableParent[0]
+                );
+
+                $price = $this->_getConfigurableProductPrice(
+                    $configurableParent,
+                    $product
+                );
+            }
+
             // if it's simple product and config is to get parent's price
             if ($product->getTypeId() == 'simple' && Mage::getStoreConfig('catalog_mapping/attributes/price_type') == Iparcel_All_Model_System_Config_Source_Catalog_Mapping_Configurable_Price::CONFIGURABLE) {
                 // get parentIds
@@ -532,14 +553,16 @@ class Iparcel_All_Helper_Api
             // if there's no price
             if (!$price) {
                 //get current product's price
-                $price = $this->_getProductAttribute($product, 'price');
+                if (is_null($price)) {
+                    $price = $this->_getProductAttribute($product, 'price');
+                }
             }
 
             // If all attempts to gather a price based on configuration fail,
             // call getPrice() on the product
             if (!$price) {
                 $price = $product->getPrice();
-             }
+            }
 
             $item['CountryOfOrigin'] = (string)$product->getCountryOfManufacture();
             $item['CurrentPrice'] = (float)$price;
@@ -916,5 +939,52 @@ class Iparcel_All_Helper_Api
         }
 
         return true;
+    }
+
+    /**
+     * Find the price for a simple product based on the configurable
+     *
+     * @param $configurable
+     * @param $simple
+     * @return null|float
+     */
+    protected function _getConfigurableProductPrice($configurable, $simple)
+    {
+        $price = null;
+
+        $productAttributeOptions = $configurable->getTypeInstance(true)
+            ->getConfigurableAttributesAsArray($configurable);
+
+        $options = array();
+        // Builds the $options array to match the attribute configuration for
+        // this particular simple -> configurable relationship
+        foreach ($productAttributeOptions as $key => $productAttribute) {
+            $allValues = array_column(
+                $productAttribute['values'],
+                'value_index'
+            );
+
+            $currentProductValue = $simple->getData(
+                $productAttribute['attribute_code']
+            );
+
+            if (in_array($currentProductValue, $allValues)) {
+                $options[$key] = array_search($currentProductValue, $allValues);
+            }
+        }
+
+        if (!count($options)) {
+            return null;
+        }
+
+        // Get the value of each selected option
+        foreach ($options as $key => $value) {
+            $price += $productAttributeOptions[$key]['values'][$value]['pricing_value'];
+        }
+
+        // Add configurable base price
+        $price += $configurable->getFinalPrice();
+
+        return $price;
     }
 }

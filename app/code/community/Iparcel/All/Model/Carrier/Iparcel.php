@@ -33,11 +33,15 @@ class Iparcel_All_Model_Carrier_Iparcel extends Iparcel_All_Model_Carrier_Abstra
 
             // If this is being used with CartHandoff, we don't return methods
             // for orders with Amazon or PayPal payments
-            if (Mage::helper('iparcel')->isCartHandoffInstalled()
+            $isCartHandoff = Mage::helper('iparcel')->isCartHandoffInstalled();
+            if ($isCartHandoff
                 && ($this->_isAmazonPayments() || $this->_isPayPalPayment())
             ) {
                 return false;
             }
+
+            // Maintain a list of items ineligible for international shipping
+            $ineligibleItems = array();
 
             /** @var boolean $internationalOrder */
             $internationalOrder = Mage::helper('iparcel')->getIsInternational($request);
@@ -94,6 +98,14 @@ class Iparcel_All_Model_Carrier_Iparcel extends Iparcel_All_Model_Carrier_Abstra
                         'duty' => $duty,
                         'tax' => $tax
                     );
+
+                    // If this service level has InvalidItems, add them to the
+                    // list of ineligible items
+                    $invalid = (array) $ci->InvalidItems->Items;
+                    foreach ($invalid as $item) {
+                        $ineligibleItems[] = $item->Sku;
+                    }
+
                 }
                 // Store the shipping quote
                 $quoteId = Mage::getModel('checkout/cart')->getQuote()->getId();
@@ -103,6 +115,30 @@ class Iparcel_All_Model_Carrier_Iparcel extends Iparcel_All_Model_Carrier_Abstra
                 $quote->setParcelId($iparcelTaxAndDuty['parcel_id']);
                 $quote->setServiceLevels($iparcelTaxAndDuty['service_levels']);
                 $quote->save();
+
+                // Add error message for any products that are not eligible
+                // for international shipping
+                if ($isCartHandoff) {
+                    $ineligibleItems = array_unique($ineligibleItems);
+                    $skusToNames = array();
+                    $allItems = $request->getAllItems();
+                    if (count($ineligibleItems)) {
+                        foreach ($allItems as $requestItem) {
+                            $skusToNames[$requestItem->getSku()] = $requestItem
+                                ->getName();
+                        }
+                    }
+
+                    $session = Mage::getSingleton('checkout/session');
+                    $session->getMessages(true);
+                    foreach ($ineligibleItems as $ineligibleItem) {
+                        $name = $skusToNames[$ineligibleItem];
+                        $session->addError(
+                            "'$name' is not available for international shipping"
+                        );
+                    }
+                }
+
                 return $result;
             }
         } catch (Exception $e) {

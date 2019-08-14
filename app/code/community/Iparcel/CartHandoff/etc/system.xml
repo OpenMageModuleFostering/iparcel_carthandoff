@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <config>
     <sections>
-	<iparcel>
-	    <groups>
+        <iparcel>
+            <groups>
                 <api translate="label" module="ipcarthandoff">
                     <label>API Options</label>
                     <sort_order>100</sort_order>
@@ -11,27 +11,27 @@
                     <show_in_store>1</show_in_store>
                     <expanded>1</expanded>
                     <fields>
-			<timeout>
-			    <label>Timeout (in seconds)</label>
-			    <frontend_type>text</frontend_type>
-			    <sort_order>1</sort_order>
-			    <show_in_default>1</show_in_default>
-			    <show_in_website>1</show_in_website>
-			    <show_in_store>1</show_in_store>
-			</timeout>
-			<timeout_message>
-			    <label>Timeout Message</label>
-			    <tooltip>This error message will be attached to a user's session in the event of a timeout.</tooltip>
-			    <frontend_type>text</frontend_type>
-			    <sort_order>5</sort_order>
-			    <show_in_default>1</show_in_default>
-			    <show_in_website>1</show_in_website>
-			    <show_in_store>1</show_in_store>
-			</timeout_message>
-		    </fields>
-		</api>
-	    </groups>
-	</iparcel>
+                        <timeout>
+                            <label>Timeout (in seconds)</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>1</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </timeout>
+                        <timeout_message>
+                            <label>Timeout Message</label>
+                            <tooltip>This error message will be attached to a user's session in the event of a timeout.</tooltip>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>5</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </timeout_message>
+                    </fields>
+                </api>
+            </groups>
+        </iparcel>
         <carriers>
             <groups>
                 <iparcel>
@@ -153,7 +153,7 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </sort_order>
-			<back_to_shopping>
+                        <back_to_shopping>
                             <label>Back To Shopping link</label>
                             <tooltip>This string will be appended to the end of the site's BaseURL, and be linked to from the UPS i-parcel payment page. This is blank by default.</tooltip>
                             <frontend_type>text</frontend_type>
@@ -161,7 +161,17 @@
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
-			</back_to_shopping>
+                        </back_to_shopping>
+                        <allow_partial_cart>
+                            <label>Allow Checkout with Inelligble Items?</label>
+                            <tooltip>Allow customers to checkout when they have inelligible items in their cart. These items will be removed from the cart before the order is placed.</tooltip>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>35</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </allow_partial_cart>
                     </fields>
                 </ipcarthandoff>
             </groups>
