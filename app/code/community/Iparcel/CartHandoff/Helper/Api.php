@@ -144,17 +144,11 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
         $request['prepaidamount'] = $this->_findPrepaidAmount($quote);
 
         // Calculate discount
-        $totalKeys = array(
-            'subtotal', 'shipping', 'iparcel_tax', 'iparcel_duty', 'tax'
+        $request['discount_amount_cart'] = round(
+            $quote->getBaseSubtotalWithDiscount() - $quote->getBaseSubtotal(),
+            2
         );
 
-        $total = 0;
-        foreach ($totalKeys as $key) {
-            if (array_key_exists($key, $totals) && is_object($totals[$key])) {
-                $total += $totals[$key]->getValue();
-            }
-        }
-        
         // Support for Unirgy_GiftCert
         $unirgyGiftCert = 0;
         if (class_exists('Unirgy_Giftcert_Model_Quote_Total', false)) {

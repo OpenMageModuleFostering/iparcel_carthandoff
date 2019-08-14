@@ -43,6 +43,9 @@ class Iparcel_All_AjaxController extends Mage_Core_Controller_Front_Action
             $options = array();
             foreach ($attributes as $attribute) {
                 $id = $attribute->getAttributeId();
+                if (!is_array($attribute->getPrices())) {
+                    continue;
+                }
                 foreach ($attribute->getPrices() as $value) {
                     if ($value['value_index'] == $super_attribute[$id]) {
                         $options[$attribute->getProductAttribute()->getAttributeCode()] = $value['label'];
