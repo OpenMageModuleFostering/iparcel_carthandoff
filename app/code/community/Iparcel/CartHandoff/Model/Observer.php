@@ -35,6 +35,11 @@ class Iparcel_CartHandoff_Model_Observer
                     }
                 }
 
+                // Make sure that our payment method is set if applicable
+                if (count($methods) == 0) {
+                    $methods[] = $paymentMethod;
+                }
+
                 $block->setMethods($methods);
             }
         }

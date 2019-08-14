@@ -154,9 +154,20 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
                 $total += $totals[$key]->getValue();
             }
         }
+        
+        // Support for Unirgy_GiftCert
+        $unirgyGiftCert = 0;
+        if (class_exists('Unirgy_Giftcert_Model_Quote_Total', false)) {
+            $unirgyTotals = $quote->getTotals();
+            $unirgyTotals = $unirgyTotals['ugiftcert'];
+
+            if (is_object($unirgyTotals)) {
+                $unirgyGiftCert = $unirgyTotals->getData('value');
+            }
+        }
 
         $request['discount_amount_cart'] = round(
-            $total - $quote->getGrandTotal(),
+            $total - ($quote->getGrandTotal() + $unirgyGiftCert),
             2
         );
 
@@ -845,6 +856,18 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
                 foreach ($creditCollection as $credit) {
                     $prepaidAmount += $credit->getStorecreditAmount();
                 }
+            }
+        } elseif ($quote->getGiftCardsAmountUsed()) {
+            $prepaidAmount = $quote->getGiftCardsAmountUsed();
+        }
+
+        // Support for Unirgy GiftCert
+        if (class_exists('Unirgy_Giftcert_Model_Quote_Total', false)) {
+            $unirgyTotals = $quote->getTotals();
+            $unirgyTotals = $unirgyTotals['ugiftcert'];
+
+            if (is_object($unirgyTotals)) {
+                $prepaidAmount += $unirgyTotals->getData('value');
             }
         }
 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Controller for handling Cart Handoff
  *
@@ -10,6 +11,7 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
 {
     protected $_session = null;
     protected $_quote = null;
+    protected $iparcelLogfile = 'iparcel_carthandoff.log';
 
     /**
      * Grab user's checkout session and quote
@@ -38,8 +40,9 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
         $customer = $this->_quote->getCustomer();
 
         if (!Mage::helper('checkout')->isAllowedGuestCheckout(
-            $this->_quote,
-            $this->_quote->getStoreId()) && $customer->getId() == null
+                $this->_quote,
+                $this->_quote->getStoreId()
+            ) && $customer->getId() == null
         ) {
             // Prevent guests from checking out
             $this->_session->setBeforeAuthUrl(
@@ -129,30 +132,74 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
     public function returnAction()
     {
         $transactionId = $this->getRequest()->getParam('tx');
+        $this->logToFile('returnAction(): Processing tx: ' . $transactionId);
         $apiHelper = Mage::helper('ipcarthandoff/api');
 
-        $checkoutDetailsResponse = $apiHelper->getCheckoutDetails(
-            $transactionId,
-            $this->_session
-        );
+        $txid = Mage::getModel('ipcarthandoff/txid')
+            ->loadByTxid($transactionId);
 
-        // Handle error status
-        if ($checkoutDetailsResponse->status == 'FAILED'
-            || property_exists($checkoutDetailsResponse, 'status') == false
-        ) {
-            $this->_session->addError($checkoutDetailsResponse->message);
-            $this->getResponse()->setRedirect(Mage::getUrl('checkout/cart'));
-            return;
+        if (is_object($txid)) {
+            if ($txid->getProcessing()) {
+                $this->logToFile('returnAction(): Waiting on ' . $transactionId . ' to finish processing.');
+                // We're still working on this order
+                $this->_waitForTxidProcessing($txid);
+            }
         } else {
-            $order = $this->_buildOrder($checkoutDetailsResponse, $this->_session);
+            $txid = Mage::getModel('ipcarthandoff/txid')
+                ->setTxid($transactionId);
         }
+
+        $txid->setProcessing(true);
+        $txid->save();
+
+        $this->logToFile('returnAction(): Attempting to laod order with Tracking Number ' . $transactionId);
+        // Make sure the order doesn't exist before calling GetCheckoutDetails
+        $order = Mage::helper('ipcarthandoff')
+            ->loadOrderByTrackingNumber($transactionId);
+
+        if ($order == false) {
+            $this->logToFile('returnAction(): Calling getCheckoutDetails for ' . $transactionId);
+            $checkoutDetailsResponse = $apiHelper->getCheckoutDetails(
+                $transactionId,
+                $this->_session
+            );
+
+            // Handle error status
+            if ($checkoutDetailsResponse->status == 'FAILED'
+                || property_exists($checkoutDetailsResponse, 'status') == false
+            ) {
+                $this->logToFile('returnAction(): Error from GetCheckoutDetails on ' . $transactionId . ' -- ' . $checkoutDetailsResponse->message);
+                $this->_session->addError($checkoutDetailsResponse->message);
+                $this->getResponse()->setRedirect(Mage::getUrl('checkout/cart'));
+                $txid->setProcessing(false);
+                $txid->save();
+                return;
+            } else {
+                $this->logToFile('returnAction(): Calling _buildOrder for ' . $transactionId);
+                $order = $this->_buildOrder(
+                    $checkoutDetailsResponse,
+                    $this->_session,
+                    $txid
+                );
+            }
+        }
+
+        $txid->setProcessing(false);
+        $txid->save();
 
         $this->_prepareSuccessPage($order);
         $this->loadLayout();
-        Mage::dispatchEvent('checkout_onepage_controller_success_action',
-                            array(
-                                'order_ids' => $this->_orderIds
-                            )
+        $this->logToFile(
+            'returnAction(): Building order review page for Order ID '
+            . join(', ', $this->_orderIds)
+            . ' and tx: '
+            . $transactionId
+        );
+        Mage::dispatchEvent(
+            'checkout_onepage_controller_success_action',
+            array(
+                'order_ids' => $this->_orderIds
+            )
         );
         $this->renderLayout();
 
@@ -165,35 +212,7 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
      */
     public function paymentReturnAction()
     {
-        $transactionId = $this->getRequest()->getParam('tx');
-        $apiHelper = Mage::helper('ipcarthandoff/api');
-
-        $checkoutDetailsResponse = $apiHelper->getCheckoutDetails(
-            $transactionId,
-            $this->_session
-        );
-
-        // Handle error status
-        if ($checkoutDetailsResponse->status == 'FAILED'
-            || property_exists($checkoutDetailsResponse, 'status') == false
-        ) {
-            $this->_session->addError($checkoutDetailsResponse->message);
-            $this->getResponse()->setRedirect(Mage::getUrl('checkout/cart'));
-            return;
-        } else {
-            $order = $this->_buildOrder($checkoutDetailsResponse, $this->_session);
-        }
-
-
-        // Show the order review page
-        $this->_prepareSuccessPage($order);
-        $this->loadLayout();
-        Mage::dispatchEvent('checkout_onepage_controller_success_action',
-                            array(
-                                'order_ids' => $this->_orderIds
-                            )
-        );
-        $this->renderLayout();
+        return $this->returnAction();
     }
 
     /**
@@ -255,32 +274,44 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
      * @param object $response Response from the API
      * @param object $session User's session
      * @return mixed Order is returned on success. Error string on failure
+     * @internal param object $txid Txid object to keep current status
      */
     private function _buildOrder($response, $session)
     {
-       // Pull the quote ID from the response. Apply it to the current session
+        // Pull the quote ID from the response. Apply it to the current session
         $quoteId = $response->reference_number;
+        $txId = $response->trackingnumber;
+        $this->logToFile(
+            '_buildOrder(): Loading quote ID '
+            . $quoteId
+            . ' for TXID: '
+            . $txId
+        );
         $quote = Mage::getModel('sales/quote')->load($quoteId);
         $session = $session->replaceQuote($quote);
 
         try {
-            // Make sure the order doesn't exist before attempting
-            // to build a new order
-            $order = Mage::helper('ipcarthandoff')
-                   ->loadOrderByTrackingNumber($response->trackingnumber);
-
-            if ($order == false) {
-                $order = Mage::helper('ipcarthandoff/api')->buildOrder(
-                    $session->getQuote(), $response
-                );
-            }
+            $order = Mage::helper('ipcarthandoff/api')->buildOrder(
+                $session->getQuote(), $response
+            );
         } catch (Exception $e) {
             Mage::logException($e);
-            // This catches any excpetions thrown during order creation.
+            // This catches any exceptions thrown during order creation.
 
+            $this->logToFile(
+                '_buildOrder(): Failed to build order for tx ' . $txId
+            );
+
+            $this->logToFile(
+                '_buildOrder(): Attempting to recover tx ' . $txId
+            );
             $order = $this->_loadAndVerify($response, $quote);
 
             if ($order == false) {
+                $this->logToFile(
+                    '_buildOrder(): Unable to recover tx ' . $txId
+                );
+
                 /**
                  * If the Magento order cannot be created, or was created incorrectly,
                  * attempt to load the order and cancel it if it exists.
@@ -289,14 +320,28 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
                 $order->loadByAttribute('quote_id', $quote->getId());
 
                 if ($order->getId() != null) {
+                    $this->logToFile(
+                        '_buildOrder(): Canceling Magento Order ID ' . $order->getId()
+                    );
                     $order->cancel();
                 }
+
+                $this->logToFile(
+                    '_buildOrder(): Error message when building order for tx '
+                    . $txId
+                    . ' : '
+                    . $e->getMessage()
+                );
 
                 // Should only hit this point if there is no way to recover from
                 // errors during order creation
                 return $e->getMessage();
             }
         }
+
+        $this->logToFile(
+            '_buildOrder(): Successfully built order for tx ' . $txId
+        );
 
         return $order;
     }
@@ -329,9 +374,9 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
         }
 
         $responseGrandTotal = $responseGrandTotal
-                            + $response->shipping_cost
-                            + $response->duty
-                            + $response->tax;
+            + $response->shipping_cost
+            + $response->duty
+            + $response->tax;
         $responseGrandTotal -= $response->discount_amount_cart;
 
         // Verify that the order totals match the information in the response.
@@ -348,5 +393,48 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
         }
 
         return false;
+    }
+
+    /**
+     * Waits for $txid processing to finish
+     *
+     * @param $txid
+     * @return bool
+     */
+    public function _waitForTxidProcessing($txid)
+    {
+        $waitTime = 10;
+        if ($txid->getProcessing() == false) {
+            return true;
+        }
+
+        $id = $txid->getId();
+        while ($waitTime > 0) {
+            $txid = Mage::getModel('ipcarthandoff/txid')->load($id);
+
+            if ($txid->getProcessing() == false) {
+                return true;
+            }
+
+            sleep(1);
+            $waitTime--;
+        }
+
+        $this->_session->addError("Cannot process order.");
+        $this->getResponse()->setRedirect(Mage::getUrl('checkout/cart'));
+
+        return;
+    }
+
+    /**
+     * Log messages to the IPARCEL_LOGFILE
+     *
+     * @param string $message
+     * @return bool
+     */
+    public function logToFile($message)
+    {
+        Mage::log($message, null, $this->iparcelLogfile, true);
+        return true;
     }
 }

@@ -2,7 +2,7 @@
 <config>
     <modules>
         <Iparcel_CartHandoff>
-            <version>1.6.1</version>
+            <version>1.6.2</version>
         </Iparcel_CartHandoff>
     </modules>
     <global>
@@ -17,6 +17,9 @@
                     <checkitems>
                         <table>iparcel_carthandoff_checkitems_cache</table>
                     </checkitems>
+                    <txid>
+                        <table>iparcel_carthandoff_txids</table>
+                    </txid>
                 </entities>
             </ipcarthandoff_resource>
             <sales>
