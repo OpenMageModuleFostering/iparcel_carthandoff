@@ -348,7 +348,8 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
 
         // Strip products from the collection that are not in the array
         $itemIds = array();
-        foreach ($collection->getItems() as $key => &$item) {
+        $itemList = $collection->getItems();
+        foreach ($itemList as $key => $item) {
             if (in_array($item->getSku(), array_keys($eligibleSKUs))) {
                 $itemIds[] = $key;
             } else {
@@ -500,6 +501,13 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
             ->save();
 
         $responseShipping = $response->AddressInfo->Shipping;
+        /**
+         * After pulling the shipping address from the response, we pass it to
+         * Iparcel_CartHandoff_Model_System_Config_Source_Shippingaddress for
+         * any processing
+         */
+        $responseShipping = $this->_updateShippingAddress($responseShipping);
+
         $shippingStreet = $responseShipping->shipping_address1;
         if ($responseShipping->shipping_address2 != '') {
             $shippingStreet .= "\n" . $responseShipping->shipping_address2;
@@ -630,5 +638,35 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
         $order->save();
 
         return $order;
+    }
+
+    /**
+     * Alter the shipping address returned by getCheckoutDetails to match the
+     * configured shipping address to use for Cart Handoff orders
+     *
+     * @param $address
+     * @return object
+     */
+    private function _updateShippingAddress($address)
+    {
+        $shippingAddressSource = Mage::getModel(
+            'ipcarthandoff/system_config_source_shippingaddress'
+        );
+
+        $shippingAddressConfiguration = Mage::getStoreConfig(
+            'payment/ipcarthandoff/shipping_address'
+        );
+
+        /**
+         * If the store is configured to override the user's shipping address,
+         * pull that address from the source model
+         */
+        if ($shippingAddressConfiguration != $shippingAddressSource::CUSTOMER) {
+            $selectedAddress = $shippingAddressSource::ADDRESS[$shippingAddressConfiguration];
+            $selectedAddress['shipping_email'] = $address->shipping_email;
+            $address = (object) $selectedAddress;
+        }
+
+        return $address;
     }
 }

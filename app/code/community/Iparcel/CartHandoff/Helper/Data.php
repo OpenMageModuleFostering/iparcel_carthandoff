@@ -85,4 +85,19 @@ class Iparcel_CartHandoff_Helper_Data extends Mage_Core_Helper_Abstract
 
         return $order;
     }
+
+    /**
+     * Returns the store's configured order status for paid Cart Handoff orders
+     *
+     * @return string
+     */
+    public function getOrderStatus()
+    {
+        $status = Mage::getStoreConfig('payment/ipcarthandoff/order_status');
+        if ($status == '' || is_null($status)) {
+            return Mage_Sales_Model_Order::STATE_COMPLETE;
+        }
+
+        return $status;
+    }
 }

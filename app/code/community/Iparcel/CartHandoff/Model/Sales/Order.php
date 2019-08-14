@@ -8,6 +8,12 @@
 */
 class Iparcel_CartHandoff_Model_Sales_Order extends Mage_Sales_Model_Order
 {
+    /**
+     * Control the flow of new order emails to match the store's configuration
+     *
+     * @param bool $forceMode
+     * @return $this
+     */
     public function queueNewOrderEmail($forceMode = false)
     {
         if (Mage::getStoreConfig('payment/ipcarthandoff/send_new_order_emails') == 0

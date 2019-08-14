@@ -2,7 +2,7 @@
 <config>
     <modules>
         <Iparcel_CartHandoff>
-            <version>1.3.0</version>
+            <version>1.4.0</version>
         </Iparcel_CartHandoff>
     </modules>
     <global>
@@ -119,6 +119,7 @@
                 <mode>2</mode>
             </tax>
             <international_customer>
+                <checkitems>0</checkitems>
                 <checkitems_price>0</checkitems_price>
                 <checkitems_cache_lifetime>0</checkitems_cache_lifetime>
             </international_customer>

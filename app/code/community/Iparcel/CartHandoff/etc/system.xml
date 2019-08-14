@@ -84,6 +84,26 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </send_new_order_emails>
+                        <shipping_address>
+                            <label>Shipping address for Cart Handoff Orders</label>
+                            <tooltip>Use the customer's entered shipping address, or override the address with a UPS i-parcel facility address?</tooltip>
+                            <frontend_type>select</frontend_type>
+                            <source_model>ipcarthandoff/system_config_source_shippingaddress</source_model>
+                            <sort_order>28</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </shipping_address>
+                        <order_status>
+                            <label>Order Status for Submitted and Paid Orders</label>
+                            <tooltip>By default, a submitted and paid order will be set to the "Complete" status.</tooltip>
+                            <frontend_type>select</frontend_type>
+                            <source_model>iparcel/system_config_source_sales_order_status</source_model>
+                            <sort_order>29</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </order_status>
                         <sort_order>
                             <label>Sort Order</label>
                             <tooltip>Sort Order as a payment method.</tooltip>

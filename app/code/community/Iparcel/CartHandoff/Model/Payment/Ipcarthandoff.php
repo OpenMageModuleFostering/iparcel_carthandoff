@@ -70,7 +70,7 @@ class Iparcel_CartHandoff_Model_Payment_Ipcarthandoff extends Iparcel_All_Model_
                 // Attach comment of successful payment
                 $order->addStatusHistoryComment(
                     'Payment processed successfully',
-                    Mage_Sales_Model_Order::STATE_COMPLETE
+                    Mage::helper('ipcarthandoff')->getOrderStatus()
                 );
                 $order->save();
             }
