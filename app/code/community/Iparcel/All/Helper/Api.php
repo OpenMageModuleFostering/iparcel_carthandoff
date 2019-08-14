@@ -341,7 +341,9 @@ class Iparcel_All_Helper_Api
         $shipping['PostCode'] = $shippingAddress->getPostcode();
         $shipping['Region'] = $shippingAddress->getRegion();
         $shipping['Street1'] = $shippingStreet[0];
-        $shipping['Street2'] = $shippingStreet[1];
+        if (array_key_exists(1, $shippingStreet)) {
+            $shipping['Street2'] = $shippingStreet[1];
+        }
         $addressInfo['Shipping'] = $shipping;
         $addressInfo['ControlNumber'] = $order->getCpf();
         $json['AddressInfo'] = $addressInfo;

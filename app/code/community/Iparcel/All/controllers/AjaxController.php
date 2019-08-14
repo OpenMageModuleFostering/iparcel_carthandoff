@@ -19,6 +19,11 @@ class Iparcel_All_AjaxController extends Mage_Core_Controller_Front_Action
         // var $product Mage_Catalog_Model_Product
         $product = Mage::getModel('catalog/product')->loadByAttribute('sku', $sku);
 
+        // Return an empty response if no product matches the given SKU
+        if ($product == false) {
+            return;
+        }
+
         /**
          * If we are dealing with a simple product, we just need to worry about
          * custom options.

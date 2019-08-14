@@ -2,7 +2,7 @@
 <config>
     <modules>
         <Iparcel_CartHandoff>
-            <version>1.1.0</version>
+            <version>1.1.1</version>
         </Iparcel_CartHandoff>
     </modules>
     <global>

@@ -95,10 +95,22 @@ class Iparcel_All_Helper_Data extends Mage_Core_Helper_Abstract
      */
     public function isIparcelOrder(Mage_Sales_Model_Order $order)
     {
-        $iparcelCarrier = Mage::getModel('iparcel/carrier_iparcel');
-        if ($order->getShippingCarrier()->getCarrierCode() == $iparcelCarrier->getCarrierCode()) {
+        $iparcelCarrier = Mage::getModel('iplogistics/carrier_iparcel');
+
+        $carrier = $order->getShippingCarrier();
+
+        if (is_null($carrier) || $carrier == false) {
+            $method = $order->getShippingMethod();
+            if (preg_match('/^iparcel.*/', $method)) {
+                return true;
+            }
+            return false;
+        }
+
+        if ($carrier->getCarrierCode() == $iparcelCarrier->getCarrierCode()) {
             return true;
         }
+
         return false;
     }
 

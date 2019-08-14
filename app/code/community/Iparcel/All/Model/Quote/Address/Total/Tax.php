@@ -50,6 +50,7 @@ class Iparcel_All_Model_Quote_Address_Total_Tax extends Iparcel_All_Model_Quote_
                 if ($dutyAndTaxes['service_levels'] == false) {
                     Mage::throwException('Failed to set shipping rates tax and duty.');
                 }
+                Mage::unregister('iparcel_duty_and_taxes');
                 Mage::register('iparcel_duty_and_taxes', $dutyAndTaxes);
             }
 

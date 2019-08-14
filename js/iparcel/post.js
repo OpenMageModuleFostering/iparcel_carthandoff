@@ -147,7 +147,10 @@ var iparcelPost = {
         });
     },
     append: function(item,name){
-        $jip('.item .product-name a:contains('+name+')').closest('.item').append(item);
+        var $item = $jip('.item .product-name a').filter(function () {
+            return $jip(this).text() == name;
+        });
+        $item.closest('.item').append(item);
     }
 };
 
