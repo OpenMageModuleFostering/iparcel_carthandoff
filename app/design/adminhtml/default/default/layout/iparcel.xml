@@ -24,18 +24,11 @@
             </block>
         </reference>
     </adminhtml_iparcel_shipment_split>
-    <adminhtml_iparcel_sync_ajax>
-        <block type="adminhtml/page" name="root" output="toHtml" template="page.phtml">
-            <block type="adminhtml/page_head" name="head" as="head" template="page/head.phtml">
-                <action method="addJs"><script>iparcel/jQuery.js</script></action>
-                <action method="addJs"><script>iparcel/adminhtml/sync.js</script></action>
-                <action method="addCss"><stylesheet>iparcel/ajaxSync.css</stylesheet></action>
-            </block>
-            <block type="core/text_list" name="content" as="content" />
-        </block>
-    </adminhtml_iparcel_sync_ajax>
     <adminhtml_iparcel_sync_ajax_catalog>
         <reference name="head">
+            <action method="addJs"><script>iparcel/jQuery.js</script></action>
+            <action method="addJs"><script>iparcel/adminhtml/sync.js</script></action>
+            <action method="addCss"><stylesheet>iparcel/ajaxSync.css</stylesheet></action>
             <action method="setTitle"><title>i-parcel Catalog Upload</title></action>
         </reference>
         <reference name="content">
@@ -44,6 +37,9 @@
     </adminhtml_iparcel_sync_ajax_catalog>
     <adminhtml_iparcel_sync_ajax_checkitems>
         <reference name="head">
+            <action method="addJs"><script>iparcel/jQuery.js</script></action>
+            <action method="addJs"><script>iparcel/adminhtml/sync.js</script></action>
+            <action method="addCss"><stylesheet>iparcel/ajaxSync.css</stylesheet></action>
             <action method="setTitle"><title>i-parcel Check Items</title></action>
         </reference>
         <reference name="content">

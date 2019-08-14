@@ -9,31 +9,6 @@
 class Iparcel_All_Adminhtml_Iparcel_Sync_AjaxController extends Mage_Adminhtml_Controller_Action
 {
     /**
-     * Preparing handles for controller
-     *
-     * @params array $handles
-     * @return Iparcel_All_Adminhtml_Iparcel_Sync_AjaxController
-     */
-    protected function _setupHandles(array $handles)
-    {
-        $update = $this->getLayout()->getUpdate();
-        /* @var $update Mage_Core_Model_Layout_Update */
-        $update->resetHandles();
-        $update->addHandle('adminhtml_iparcel_sync_ajax');
-        foreach ($handles as $handle) {
-            if (is_string($handle)) {
-                $update->addHandle($handle);
-            }
-        }
-        $this->addActionLayoutHandles();
-        $this->loadLayoutUpdates();
-        $this->generateLayoutXml();
-        $this->generateLayoutBlocks();
-        $this->_isLayoutLoaded = true;
-        return $this;
-    }
-
-    /**
      * Response for init querry
      *
      * @return array
@@ -146,13 +121,14 @@ class Iparcel_All_Adminhtml_Iparcel_Sync_AjaxController extends Mage_Adminhtml_C
             if (method_exists($this, $params['type'])) {
                 $_response = $this->$params['type']($params);
                 $this->getResponse()
-                    ->setHeader('Content-Type', 'application/json')
+                    ->setHeader('Content-type', 'application/json', true)
                     ->setBody(json_encode($_response));
+                return;
             }
         } else {
             // show layout if not
-            $this->_setupHandles(array('adminhtml_iparcel_sync_ajax_catalog'))
-                ->renderLayout();
+            $this->loadLayout();
+            $this->renderLayout();
         }
     }
 
@@ -169,13 +145,14 @@ class Iparcel_All_Adminhtml_Iparcel_Sync_AjaxController extends Mage_Adminhtml_C
             if (method_exists($this, $params['type'])) {
                 $_response = $this->$params['type']($params);
                 $this->getResponse()
-                    ->setHeader('Content-Type', 'application/json')
+                    ->setHeader('Content-type', 'application/json', true)
                     ->setBody(json_encode($_response));
+                return;
             }
         } else {
             // show layout if not
-            $this->_setupHandles(array('adminhtml_iparcel_sync_ajax_checkitems'))
-                ->renderLayout();
+            $this->loadLayout();
+            $this->renderLayout();
         }
     }
 }

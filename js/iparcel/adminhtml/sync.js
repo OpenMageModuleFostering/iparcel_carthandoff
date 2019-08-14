@@ -17,9 +17,9 @@ var iparcelSync = {
 		iparcelSync.item.count = data.count;
 		iparcelSync.sync.eq(1).text(iparcelSync.item.count);
 		iparcelSync.end.eq(1).text(iparcelSync.item.count);
-		$('#starting').hide();
-		$('#sync').show();
-		$.get(iparcelSync.item.url,{
+		jQuery('#starting').hide();
+		jQuery('#sync').show();
+		jQuery.get(iparcelSync.item.url,{
 			page: ++iparcelSync.item.page,
 			step: iparcelSync.item.step,
 			type: 'upload'
@@ -43,7 +43,7 @@ var iparcelSync = {
 			}
 		}
 		if (iparcelSync.item.progress+iparcelSync.item.errors < iparcelSync.item.count){
-			$.get(iparcelSync.item.url,{
+			jQuery.get(iparcelSync.item.url,{
 				page: ++iparcelSync.item.page,
 				step: iparcelSync.item.step,
 				type: 'upload'
@@ -58,8 +58,8 @@ var iparcelSync = {
 	 */
 	finish: function(){
 		iparcelSync.end.eq(2).text(iparcelSync.item.errors);
-		$('#sync').hide();
-		$('#end').show();
+		jQuery('#sync').hide();
+		jQuery('#end').show();
 	},
 
 	/**
@@ -73,11 +73,11 @@ var iparcelSync = {
 		this.count = 0;
 		this.page = 0;
 
-		iparcelSync.sync = $('#sync span');
-		iparcelSync.end = $('#end span');
+		iparcelSync.sync = jQuery('#sync span');
+		iparcelSync.end = jQuery('#end span');
 
 		this.run = function (){
-			$.get(this.url,{type: 'init'}, iparcelSync.init);
+			jQuery.get(this.url,{type: 'init'}, iparcelSync.init);
 		}
 
 		iparcelSync.item = this;

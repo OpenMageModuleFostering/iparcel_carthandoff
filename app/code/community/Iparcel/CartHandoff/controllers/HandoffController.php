@@ -92,6 +92,7 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
         }
 
         $this->getResponse()->setRedirect(Mage::getUrl('checkout/cart'));
+        return;
     }
 
 
@@ -140,6 +141,7 @@ class Iparcel_CartHandoff_HandoffController extends Mage_Core_Controller_Front_A
             $this->_session->addError($checkoutDetailsResponse->message);
             $this->_cancelPayment($transactionId);
             $this->getResponse()->setRedirect(Mage::getUrl('checkout/cart'));
+            return;
         }
 
         $this->_prepareSuccessPage($checkoutDetailsResponse);

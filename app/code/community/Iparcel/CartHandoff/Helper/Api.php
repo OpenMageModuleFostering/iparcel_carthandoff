@@ -89,7 +89,7 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
             'currency_code' => $quote->getQuoteCurrencyCode(),
             'page_currency' => $customerCurrency,
             'custom' => $quote->getStoreId(),
-            'discount_amount_cart' => $quote->getDiscountAmount(),
+            'discount_amount_cart' => 0,
             'reference_number' => $quote->getId(),
             'return' => $returnUrl,
             'shopping_url' => Mage::getBaseUrl(),
@@ -103,6 +103,10 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
             'day_phone_a' => '',
             'day_phone_b' => $phoneNumber,
         );
+        $totals = $quote->getTotals();
+        if(isset($totals['discount'])) {
+            $request['discount_amount_cart'] = $totals['discount']->getValue(); //Ex: -50
+        }
 
         // Add items to request
         $quoteItems = $quote->getAllItems();
@@ -110,12 +114,17 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
         foreach($quoteItems as $item) {
             if ($item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_SIMPLE) {
                 // If no price is attached to this item, load it from the parent item
-                $price = $item->getProduct()->getPrice();
+                $price = $item->getProduct()->getCalculationPrice();
                 $qty = $item->getTotalQty();
                 if ($price == '0' || is_null($price)) {
                     $parentItem = $item->getParentItem();
-                    $price = $parentItem->getPrice();
-                    $qty = $parentItem->getTotalQty();
+                    if($parentItem) {
+                        $price = $parentItem->getPrice();
+                        $qty = $parentItem->getTotalQty();
+                    } else {
+                        $price = $item->getProduct()->getPrice();
+                        $qty = $item->getTotalQty();
+                    }
                 }
 
                 // TODO: Add logic to handle simple products with custom options
@@ -123,7 +132,7 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
                     'item_number' => $item->getSku(),
                     'quantity' => $qty,
                     'item_name' => $item->getName(),
-                    'amount' => $price,
+                    'amount' => $price * $qty,
                     'discount_amount' => $item->getDiscountAmount(),
                 );
                 $itemDetailsList[] = $itemDetails;

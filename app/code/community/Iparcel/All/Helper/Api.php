@@ -140,7 +140,13 @@ class Iparcel_All_Helper_Api
         $shipmentsCollection = $order->getShipmentsCollection();
 
         foreach ($shipmentsCollection as $shipment) {
-            $this->cancelShipment($shipment);
+            try {
+                $this->cancelShipment($shipment);
+            } catch (Exception $e) {
+                Mage::getSingleton('adminhtml/session')->addError(
+                    "Message from i-parcel: " . $e->getMessage()
+                );
+            }
         }
 
         return true;
@@ -688,6 +694,7 @@ class Iparcel_All_Helper_Api
                 $customOption["sort_order"] = $option->getSortOrder();
                 if (get_class($option) == 'MageWorx_CustomOptions_Model_Catalog_Product_Option') {
                     $customOption['required'] = $option->getIsRequire(true);
+                    $customOption["sku"] = $option->getSku() ? $option->getSku() : $option->getId();
                 } else {
                     $customOption['required'] = $option->getIsRequire();
                 }
