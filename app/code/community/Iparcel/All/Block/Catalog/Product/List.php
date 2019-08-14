@@ -59,6 +59,15 @@ class Iparcel_All_Block_Catalog_Product_List extends Mage_Catalog_Block_Product_
             }
         }
 
+        // If "checkItems" is enabled, call the CartHandoff API model to
+        // check the items in the product collection
+        if (Mage::getStoreConfig('iparcel/international_customer/checkitems')) {
+            $handoffApi = Mage::helper('ipcarthandoff/api');
+            if (is_object($handoffApi)) {
+                $handoffApi->checkItems($this->_productCollection);
+            }
+        }
+
         return $this->_productCollection;
     }
 

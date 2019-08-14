@@ -384,27 +384,28 @@ class Iparcel_All_Helper_Api
                 $itemProduct = Mage::getModel('catalog/product')->load($item->getOrderItem()->getProductId());
             }
             //get item price
-            $itemPrice = (float)$this->_getProductAttribute($item->getProduct(), 'final_price') ?: (float)$this->_getProductAttribute($item->getProduct(), 'price');
+            $itemPrice = (float)$item->getFinalPrice() ?: (float)$item->getPrice();
             // if not price and item has parent (is configurable)
             if (!$itemPrice && ($parent=$item->getParentItem())) {
                 // get parent price
-                $itemPrice = (float)$this->_getProductAttribute($parent->getProduct(), 'final_price') ?: (float)$this->_getProductAttribute($parent->getProduct(), 'price');
+                $itemPrice = (float)$parent->getFinalPrice() ?: (float)$parent->getPrice();
             }
             // if still not price
             if (!$itemPrice) {
                 // get product price
                 $itemPrice = (float)$this->_getProductAttribute($item->getProduct(), 'price');
             }
+
             // if product isn't virtual and is configurable or downloadable
             if ($item["is_virtual"] == false && !in_array($itemProduct->getTypeId(), array('configurable','downloadable'))) {
                 // add line item node
                 $lineItem = array();
                 $lineItem['SKU'] = $item->getSku();
                 $lineItem['ValueUSD'] = $itemPrice;
-                $lineItem['CustLengthInches'] = (float)$this->_getProductAttribute($item->getProduct(), 'length');
-                $lineItem['CustHeightInches'] = (float)$this->_getProductAttribute($item->getProduct(), 'height');
-                $lineItem['CustWidthInches'] = (float)$this->_getProductAttribute($item->getProduct(), 'width');
-                $lineItem['CustWeightLbs'] = (float)$this->_getProductAttribute($item->getProduct(), 'weight');
+                $lineItem['CustWeightLbs'] = (float)$item->getWeight();
+                $lineItem['CustLengthInches'] = (float)$item->getLength();
+                $lineItem['CustWidthInches'] = (float)$item->getWidth();
+                $lineItem['CustHeightInches'] = (float)$item->getHeight();
                 $lineItem['Quantity'] = (float)$item->getQty();
                 $lineItem['ValueShopperCurrency'] = $itemPrice;
                 $lineItem['ShopperCurrency'] = Mage::app()->getStore()->getCurrentCurrencyCode();

@@ -2,7 +2,7 @@
 <config>
     <modules>
         <Iparcel_CartHandoff>
-            <version>1.2.0</version>
+            <version>1.3.0</version>
         </Iparcel_CartHandoff>
     </modules>
     <global>
@@ -11,11 +11,27 @@
                 <class>Iparcel_CartHandoff_Model</class>
                 <resourceModel>ipcarthandoff_resource</resourceModel>
             </ipcarthandoff>
+            <ipcarthandoff_resource>
+                <class>Iparcel_CartHandoff_Model_Resource</class>
+                <entities>
+                    <checkitems>
+                        <table>iparcel_carthandoff_checkitems_cache</table>
+                    </checkitems>
+                </entities>
+            </ipcarthandoff_resource>
             <sales>
                 <rewrite>
                     <order>Iparcel_CartHandoff_Model_Sales_Order</order>
                 </rewrite>
             </sales>
+            <catalog>
+                <rewrite>
+                    <product_type_price>Iparcel_CartHandoff_Model_Catalog_Product_Type_Price</product_type_price>
+                    <product_type_configurable_price>Iparcel_CartHandoff_Model_Catalog_Product_Type_Configurable_Price</product_type_configurable_price>
+                    <product_type_grouped_price>Iparcel_CartHandoff_Model_Catalog_Product_Type_Grouped_Price</product_type_grouped_price>
+                    <layer>Iparcel_CartHandoff_Model_Catalog_Layer</layer>
+                </rewrite>
+            </catalog>
         </models>
         <helpers>
             <ipcarthandoff>
@@ -27,6 +43,17 @@
                 <class>Iparcel_CartHandoff_Block</class>
             </ipcarthandoff>
         </blocks>
+        <resources>
+            <ipcarthandoff_setup>
+                <setup>
+                    <module>Iparcel_CartHandoff</module>
+                    <class>Iparcel_CartHandoff_Model_Resource_Mysql4_Setup</class>
+                </setup>
+                <connection>
+                    <use>core_setup</use>
+                </connection>
+            </ipcarthandoff_setup>
+        </resources>
         <events>
             <core_block_abstract_prepare_layout_after>
                 <observers>
@@ -57,6 +84,17 @@
             </ipcarthandoff>
         </routers>
     </frontend>
+    <admin>
+        <routers>
+            <adminhtml>
+                <args>
+                    <modules>
+                        <ipcarthandoff after="Mage_Adminhtml">Iparcel_CartHandoff_Adminhtml</ipcarthandoff>
+                    </modules>
+                </args>
+            </adminhtml>
+        </routers>
+    </admin>
     <default>
         <payment>
             <ipcarthandoff>
@@ -80,6 +118,10 @@
             <tax>
                 <mode>2</mode>
             </tax>
+            <international_customer>
+                <checkitems_price>0</checkitems_price>
+                <checkitems_cache_lifetime>0</checkitems_cache_lifetime>
+            </international_customer>
         </iparcel>
     </default>
 </config>

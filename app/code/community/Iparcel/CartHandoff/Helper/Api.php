@@ -17,6 +17,9 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
     /** @var string URL for CancelPayment API Method */
     protected $_cancelPayment = 'https://pay.i-parcel.com/v1/api/Cancel';
 
+    /** @var string URL for CheckItems API Method */
+    protected $_checkItems = 'https://webservices.i-parcel.com/api/CheckItems';
+
     /**
      * Sets up customer's checkout information in UPS i-parcel
      *
@@ -254,6 +257,143 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
         }
 
         return false;
+    }
+
+    /**
+     * Filters a product collection and removes products that are not eligible
+     * for international customers.
+     *
+     * If a product is passed in instead of a collection, the price from the
+     * CheckItems call is used for the product -- no other changes are made.
+     *
+     * @param object $collection
+     * @return object
+     */
+    public function checkItems($collection)
+    {
+        $singleProduct = false;
+        $remove = true;
+        if (in_array('Varien_Data_Collection', class_parents($collection)) == false) {
+            $singleProduct = true;
+            $collection = Mage::getModel('catalog/product')
+                ->getCollection()
+                ->addAttributeToFilter('sku', $collection->getSku());
+            $remove = false;
+        }
+
+        $storeId = Mage::app()->getStore()->getId();
+
+        // Get iparcel cookie
+        $cookie = Mage::getModel('core/cookie')->get('ipar_iparcelSession');
+        $cookie = json_decode($cookie);
+
+        // Get iparcel session ID
+        $sessID = Mage::getModel('core/cookie')->get('ipar_sess_id');
+
+        if (!isset($cookie->locale) || $cookie->locale == 'US') {
+            return $collection;
+        }
+
+        // Pass the product collection into the CheckItems class to check the
+        // previously cached results
+        $checkItemsModel = Mage::getModel('ipcarthandoff/checkitems');
+        $cache = $checkItemsModel->getCache($collection, $cookie->locale, $storeId);
+
+        $eligibleSKUs = array();
+        // If the cache count matches the collection, skip sending the request
+        if (count($cache) != count($collection)) {
+            $request = array(
+                'Key' => Mage::helper('iparcel')->getGuid(),
+                'ItemDetailsList' => $this->_prepareCollectionForCheckItems($collection),
+                'AddressInfo' => array(
+                    'Billing' => array(),
+                    'Shipping' => array(
+                        'CountryCode' => $cookie->locale,
+                        'PostalCode' => 'A1A1A1'
+                    ),
+                ),
+                'CurrencyCode' => $cookie->currency,
+                'DDP' => true,
+                'Insurance' => false,
+                'SessionID' => $sessID,
+                'ServiceLevel' => 115
+            );
+
+            $response = $this->_restJSON($request, $this->_checkItems);
+
+            Mage::getModel('iparcel/log')
+                ->setController('CheckItems')
+                ->setRequest(json_encode($request))
+                ->setResponse($response)
+                ->save();
+            
+            $items = json_decode($response, true);
+            $items = $items['ItemDetailsList'];
+
+            // Cache response from the web service
+            $checkItemsModel->cacheResponse($items, $collection, $cookie->locale, $storeId);
+
+            // Load eligible SKUs into the array
+            foreach ($items as $item) {
+                if ($item['HTSCode'] != '' && $item['HTSCode'] != 'NONE') {
+                    $eligibleSKUs[$item['SKU']] = $item['ValueCompanyCurrency'];
+                }
+            }
+        } else {
+            // Build the $eligibleSKUs array from the cache
+            foreach ($cache as $sku => $price) {
+                $eligibleSKUs[$sku] = $price;
+            }
+        }
+
+        // Strip products from the collection that are not in the array
+        $itemIds = array();
+        foreach ($collection->getItems() as $key => &$item) {
+            if (in_array($item->getSku(), array_keys($eligibleSKUs))) {
+                $itemIds[] = $key;
+            } else {
+                $collection->removeItemByKey($key);
+            }
+        }
+
+        // Add filter for items remaining, and reload
+        if ($remove){
+            $collection->addFieldToFilter('entity_id',
+                array(
+                    'in' => $itemIds
+                )
+            );
+            $collection->load();
+        }
+
+        if ($singleProduct) {
+            return $collection->getFirstItem();
+        }
+
+        return $collection;
+    }
+
+    /**
+     * Formats the products from the collection for the ItemDetailsList of Checkitems
+     *
+     * @param object $collection
+     * @return array Product array formatted for CheckItems
+     */
+    private function _prepareCollectionForCheckItems($collection)
+    {
+        $productArray = array();
+
+        foreach ($collection as $product) {
+            $item = array(
+                'SKU' => $product->getSku(),
+                'Quantity' => 1,
+                'itemStyle' => null,
+            );
+
+            $productArray[] = $item;
+        }
+
+        return $productArray;
     }
 
     /**
