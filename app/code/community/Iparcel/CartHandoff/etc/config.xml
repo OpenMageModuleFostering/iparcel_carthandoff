@@ -2,7 +2,7 @@
 <config>
     <modules>
         <Iparcel_CartHandoff>
-            <version>1.4.1</version>
+            <version>1.4.2</version>
         </Iparcel_CartHandoff>
     </modules>
     <global>
@@ -105,6 +105,7 @@
                 <payment_method_message>You will be redirected to UPS i-parcel to complete checkout.</payment_method_message>
                 <cart_placement>2</cart_placement>
                 <hide_proceed_to_checkout>0</hide_proceed_to_checkout>
+                <hide_other_checkout_methods>0</hide_other_checkout_methods>
                 <send_new_order_emails>1</send_new_order_emails>
             </ipcarthandoff>
         </payment>

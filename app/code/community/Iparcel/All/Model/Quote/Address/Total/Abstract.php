@@ -16,9 +16,10 @@ class Iparcel_All_Model_Quote_Address_Total_Abstract extends Mage_Sales_Model_Qu
      */
     public function isIparcelShipping($address)
     {
+        $iparcelCarrierCode = Mage::getModel('iparcel/payment_iparcel')->getCode();
         $shippingMethod = $address->getShippingMethod();
         $shippingMethod = explode('_', $shippingMethod);
-        if ($shippingMethod[0] == 'iparcel') {
+        if ($shippingMethod[0] == $iparcelCarrierCode) {
             return true;
         }
         return false;

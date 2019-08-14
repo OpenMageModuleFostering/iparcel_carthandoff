@@ -49,7 +49,10 @@ class Iparcel_CartHandoff_Helper_Data extends Mage_Core_Helper_Abstract
      */
     public function getCheckoutUrl($transactionId)
     {
-        $key = Mage::getStoreConfig('iparcel/config/userid');
+        $key = Mage::getStoreConfig('iparcel/config/publickey');
+        if (is_null($key) || $key == '') {
+            $key = Mage::getStoreConfig('iparcel/config/userid');
+        }
         return $this->_cartUrl . '?key=' . $key . '&tx=' . $transactionId;
     }
 

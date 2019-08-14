@@ -48,7 +48,7 @@
                             <show_in_store>1</show_in_store>
                         </cart_placement>
                         <hide_proceed_to_checkout>
-                            <label>Hide the "Proceed to Checkout" button in the cart for non-US customers.</label>
+                            <label>Hide the "Proceed to Checkout" button in the cart for International Customers.</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <sort_order>17</sort_order>
@@ -56,6 +56,15 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </hide_proceed_to_checkout>
+                        <hide_other_checkout_methods>
+                            <label>Hide other payment methods in the cart (PayPal, Amazon, etc) for International Customers</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>18</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </hide_other_checkout_methods>
                         <active>
                             <label>Display as Payment Method?</label>
                             <tooltip>Adds the button to the "Payment Method" checkout step.</tooltip>
@@ -119,6 +128,18 @@
         </payment>
         <iparcel>
             <groups>
+                <config>
+                    <fields>
+                        <publickey translate="label">
+                            <label>Public API Key</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>0</show_in_store>
+                        </publickey>
+                    </fields>
+                </config>
                 <tax>
                     <show_in_default>1</show_in_default>
                     <show_in_website>1</show_in_website>

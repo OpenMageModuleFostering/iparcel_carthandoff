@@ -41,19 +41,6 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
 
         // If one or both of these are not set, use the defaults from the
         // customer.
-        if ($quoteShippingAddress->getEmail() == null) {
-            // Pull the default shipping address from the customer
-            $customerDefaultShipping = $helper->getDefaultAddress($customer, true);
-            if (is_null($customerDefaultShipping)) {
-                $shippingAddress = null;
-            } else {
-                $shippingAddress = $this->_buildAddress($customerDefaultShipping, true, $customer->getEmail());
-            }
-        } else {
-            // Set the address information from the quote shipping address
-            $shippingAddress = $this->_buildAddress($quoteShippingAddress, true);
-        }
-
         if ($quoteBillingAddress->getEmail() == null) {
             // Pull the default billing address from the customer
             $customerDefaultBilling = $helper->getDefaultAddress($customer, false);
@@ -68,6 +55,19 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
             // Set the address information from the quote billing address
             $billingAddress = $this->_buildAddress($quoteBillingAddress, false);
             $phoneNumber = $quoteBillingAddress->getTelephone();
+        }
+
+        if ($quoteShippingAddress->getAddressId() == null) {
+            // Pull the default shipping address from the customer
+            $customerDefaultShipping = $helper->getDefaultAddress($customer, true);
+            if (is_null($customerDefaultShipping)) {
+                $shippingAddress = null;
+            } else {
+                $shippingAddress = $this->_buildAddress($customerDefaultShipping, true, $billingAddress['email']);
+            }
+        } else {
+            // Set the address information from the quote shipping address
+            $shippingAddress = $this->_buildAddress($quoteShippingAddress, true, $billingAddress['email']);
         }
 
         if ($cancelUrl == false) {
@@ -122,7 +122,7 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
         foreach($quoteItems as $item) {
             if ($item->getProductType() == Mage_Catalog_Model_Product_Type::TYPE_SIMPLE) {
                 // If no price is attached to this item, load it from the parent item
-                $price = $item->getProduct()->getCalculationPrice();
+                $price = $item->getPrice();
                 $qty = $item->getTotalQty();
                 if ($price == '0' || is_null($price)) {
                     $parentItem = $item->getParentItem();
@@ -208,7 +208,7 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
                 Mage::logException($e);
                 $return = array (
                     'status' => 0,
-                    'message' => 'An error occured when processing your order.'
+                    'message' => 'An error occurred when processing your order.'
                 );
                 return (object) $return;
             }
@@ -340,8 +340,10 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
             }
         } else {
             // Build the $eligibleSKUs array from the cache
-            foreach ($cache as $sku => $price) {
-                $eligibleSKUs[$sku] = $price;
+            foreach ($cache as $sku => $data) {
+                if ($data['eligible']) {
+                    $eligibleSKUs[$sku] = $data['price'];
+                }
             }
         }
 
@@ -602,6 +604,7 @@ class Iparcel_CartHandoff_Helper_Api extends Iparcel_All_Helper_Api
 
         // Create shipment with tracking number
         $order = Mage::getModel('sales/order')->loadByIncrementId($order->getIncrementId());
+        $order->sendNewOrderEmail();
         $itemsToShip = array();
         foreach ($order->getAllItems() as $item) {
             $itemsToShip[$item->getItemId()] = $item->getQtyOrdered();

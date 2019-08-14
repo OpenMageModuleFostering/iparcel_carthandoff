@@ -295,4 +295,31 @@ class Iparcel_All_Helper_Data extends Mage_Core_Helper_Abstract
         $allExtensions = Mage::app()->getConfig()->getNode('modules')->asArray();
         return array_key_exists($name, $allExtensions);
     }
+
+    /**
+     * Gathers extension versions for any installed i-parcel extensions
+     *
+     * @return array
+     */
+    public function gatherExtensionVersions()
+    {
+        $extensions = array(
+            'Iparcel_All' => 0,
+            'Iparcel_CartHandoff' => 0,
+            'Iparcel_GlobaleCommerce' => 0,
+            'Iparcel_Logistics' => 0
+        );
+
+        $allExtensions = Mage::app()->getConfig()->getNode('modules')->asArray();
+
+        foreach ($extensions as $key => &$version) {
+            if (array_key_exists($key, $allExtensions)) {
+                $version = $allExtensions[$key]['version'];
+            } else {
+                unset($extensions[$key]);
+            }
+        }
+
+        return $extensions;
+    }
 }

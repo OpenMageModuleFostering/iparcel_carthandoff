@@ -20,7 +20,7 @@ class Iparcel_All_Block_Sales_Order_Totals_Tax extends Iparcel_All_Block_Sales_O
             $value  = $source->getIparcelTaxAmount();
 
             $this->getParentBlock()->addTotal(new Varien_Object(array(
-                'code'   => 'iparcel_tax',
+                'code'   => Mage::getModel('iparcel/payment_iparcel')->getTaxCode(),
                 'strong' => false,
                 'label'  => Mage::helper('iparcel')->getTaxLabel(),
                 'value'  => $value

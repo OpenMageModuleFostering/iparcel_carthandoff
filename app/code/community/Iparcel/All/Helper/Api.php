@@ -55,20 +55,6 @@ class Iparcel_All_Helper_Api
     }
 
     /**
-     * Send REST XML requests
-     *
-     * Wrapper for _rest() that sends a SimpleXMLElement object to the API.
-     *
-     * @param SimpleXMLElement $xml XML to send
-     * @param string $url REST API URL to send POST data to
-     * @return string Response from the POST request
-     */
-    protected function _restXML($xml, $url)
-    {
-        return $this->_rest($xml->asXml, $url, array('Content-Type: text/xml'));
-    }
-
-    /**
      * Send REST JSON requests
      *
      * Wrapper for _rest() that sends the passed data as JSON to the API.
@@ -86,7 +72,15 @@ class Iparcel_All_Helper_Api
         );
     }
 
-    protected function _getProductAttribute($product, $code) {
+    /**
+     * Finds the value of attribute matching the extension's configuration
+     * 
+     * @param Mage_Catalog_Model_Product $product
+     * @param string $code Attribute code
+     * @return string
+     */
+    protected function _getProductAttribute(Mage_Catalog_Model_Product $product, $code)
+    {
         $attribute = Mage::getModel('eav/entity_attribute')
             ->load(Mage::getStoreConfig('catalog_mapping/attributes/' . $code));
         if ($attribute->getData()) {
@@ -175,81 +169,41 @@ class Iparcel_All_Helper_Api
      */
     public function quote(Mage_Shipping_Model_Rate_Request $request)
     {
-        // log init
-        $log = Mage::getModel('iparcel/log');
-        /* var $log Iparcel_All_Model_Api_Log */
-        $log->setController('Quote');
+        /**
+         * @var Mage_Sales_Model_Quote $quote
+         * @var Iparcel_All_Model_Api_Log $log
+         */
         $quote = Mage::getModel('checkout/cart')->getQuote();
-        /* var $quote Mage_Sales_Model_Quote */
-        $shippingAddress = $quote->getShippingAddress();
-        /* var $shippingAddress Mage_Sales_Model_Quote_Address */
-        $billingAddress = $quote->getBillingAddress();
-        /* var $billingAddress Mage_Sales_Model_Quote_Address */
+        $log = Mage::getModel('iparcel/log');
+
+        // init log
+        $log->setController('Quote');
+
+        /**
+         * @var array $addressInfo AddressInfo segment of API call
+         * @var array $json Array to be sent to the API
+         */
+        $addressInfo = $this->_prepareAddress($quote, $request);
         $json = array();
-        $addressInfo = array();
-        $billingStreet = $billingAddress->getStreet();
-        $billing = array();
-        $billing['City'] = $billingAddress->getCity();
-        $billing['CountryCode'] = $billingAddress->getCountryId();
-        $billing['Email'] = $quote->getCustomerEmail();
-        $billing['FirstName'] = $billingAddress->getFirstname();
-        $billing['LastName'] = $billingAddress->getLastname();
-        $billing['Phone'] = $billingAddress->getTelephone();
-        $billing['PostCode'] = $billingAddress->getPostcode();
-        $billing['Region'] = $billingAddress->getRegion();
-        for ($i=0; $i<count($billingStreet); $i++) {
-            $billing['Street'.($i+1)] = $billingStreet[$i];
-        }
-        $addressInfo['Billing'] = $billing;
-        $shippingStreet = explode("\n", $request->getDestStreet());
-        $shipping = array();
-        $shipping['City'] = $request->getDestCity();
-        $shipping['CountryCode'] = $request->getDestCountryId();
-        $shipping['Email'] = $quote->getCustomerEmail();
-        $shipping['FirstName'] = $shippingAddress->getFirstname();
-        $shipping['LastName'] = $shippingAddress->getLastname();
-        $shipping['Phone'] = $shippingAddress->getTelephone();
-        $shipping['PostCode'] = $request->getDestPostcode();
-        $shipping['Region'] = $request->getDestRegionCode();
-        foreach($shippingStreet as $key => $value) {
-            $shipping['Street' . ($key + 1)] = $value;
-        }
-        $addressInfo['Shipping'] = $shipping;
-        $addressInfo['ControlNumber'] = $quote->getCpf();
         $json['AddressInfo'] = $addressInfo;
         $json['CurrencyCode'] = $request->getPackageCurrency()->getCurrencyCode();
         $json['DDP'] = true;
+
         $itemsList = array();
         foreach ($request->getAllItems() as $item) {
-            /* var $item Mage_Sales_Model_Quote_Item */
+            // Skip products that belong to a configurable -- we send the configurable product
+            if ($item->getParentItemId() !== null) {
+                continue;
+            }
+
+            /**
+             * @var Mage_Sales_Model_Quote_Item $item
+             * @var Mage_Catalog_Model_Product $itemProduct
+             */
             $itemProduct = Mage::getModel('catalog/product')->load($item->getProductId());
-            /* var $itemProduct Mage_Catalog_Model_Product */
-            //get item price
-            $itemPrice = (float)$this->_getProductAttribute($item->getProduct(), 'final_price') ?: (float)$this->_getProductAttribute($item->getProduct(), 'price');
-            // if not price and item has parent (is configurable)
-            if (!$itemPrice && ($parent=$item->getParentItem())) {
-                // get parent price
-                $itemPrice = (float)$this->_getProductAttribute($parent->getProduct(), 'final_price') ?: (float)$this->_getProductAttribute($parent->getProduct(), 'price');
-            }
-            // if still not price
-            if (!$itemPrice) {
-                // get product price
-                $itemPrice = (float)$this->_getProductAttribute($item->getProduct(), 'price');
-            }
-            // if product isn't virtual and is configurable or downloadable
-            if ($item["is_virtual"] == false && !in_array($itemProduct->getTypeId(), array('configurable','downloadable'))) {
-                // add line item node
-                $lineItem = array();
-                $lineItem['SKU'] = $item->getSku();
-                $lineItem['ValueUSD'] = $itemPrice;
-                $lineItem['CustLengthInches'] = (float)$this->_getProductAttribute($item->getProduct(), 'length');
-                $lineItem['CustHeightInches'] = (float)$this->_getProductAttribute($item->getProduct(), 'height');
-                $lineItem['CustWidthInches'] = (float)$this->_getProductAttribute($item->getProduct(), 'width');
-                $lineItem['CustWeightLbs'] = (float)$this->_getProductAttribute($item->getProduct(), 'weight');
-                $lineItem['Quantity'] = $item->getTotalQty();
-                $lineItem['ValueShopperCurrency'] = $itemPrice;
-                $lineItem['ShopperCurrency'] = Mage::app()->getStore()->getCurrentCurrencyCode();
-                $itemsList[] = $lineItem;
+            if ($item["is_virtual"] == false && $itemProduct->getTypeId() != 'downloadable') {
+                $itemDetails = $this->_getItemDetails($item);
+                $itemsList[] = $itemDetails;
             }
         }
         $json['ItemDetailsList'] = $itemsList;
@@ -325,57 +279,34 @@ class Iparcel_All_Helper_Api
      */
     public function submitParcel(Mage_Sales_Model_Order_Shipment $shipment)
     {
+        /**
+         * @var Mage_Sales_Model_Order $order
+         * @var Iparcel_All_Model_Api_Log $log
+         */
         $order = $shipment->getOrder();
-        // init log
         $log = Mage::getModel('iparcel/log');
-        /* var $log Iparcel_All_Model_Api_Log */
+
+        // init log
         $log->setController('Submit Parcel');
-        $shippingAddress = $order->getShippingAddress();
-        /* var $shippingAddress Mage_Sales_Model_Quote_Address */
-        $billingAddress = $order->getBillingAddress();
-        /* var $billingAddress Mage_Sales_Model_Quote_Address */
+
+        /**
+         * @var array $addressInfo AddressInfo segment of API call
+         * @var array $json Array to be sent to the API
+         */
+        $addressInfo = $this->_prepareAddress($order);
         $json = array();
-        $addressInfo = array();
-        $billingStreet = $billingAddress->getStreet();
-        $billing = array();
-        $billing['City'] = $billingAddress->getCity();
-        $billing['CountryCode'] = $billingAddress->getCountryId();
-        $billing['Email'] = $order->getCustomerEmail();
-        $billing['FirstName'] = $billingAddress->getFirstname();
-        $billing['LastName'] = $billingAddress->getLastname();
-        $billing['Phone'] = $billingAddress->getTelephone();
-        $billing['PostCode'] = $billingAddress->getPostcode();
-        $billing['Region'] = $billingAddress->getRegion();
-        $billing['Street1'] = $billingStreet[0];
-        if (array_key_exists(1, $billingStreet)) {
-            $billing['Street2'] = $billingStreet[1];
-        }
-        $addressInfo['Billing'] = $billing;
-        $shippingStreet = $shippingAddress->getStreet();
-        $shipping = array();
-        $shipping['City'] = $shippingAddress->getCity();
-        $shipping['CountryCode'] = $shippingAddress->getCountryId();
-        $shipping['Email'] = $order->getCustomerEmail();
-        $shipping['FirstName'] = $shippingAddress->getFirstname();
-        $shipping['LastName'] = $shippingAddress->getLastname();
-        $shipping['Phone'] = $shippingAddress->getTelephone();
-        $shipping['PostCode'] = $shippingAddress->getPostcode();
-        $shipping['Region'] = $shippingAddress->getRegion();
-        $shipping['Street1'] = $shippingStreet[0];
-        if (array_key_exists(1, $shippingStreet)) {
-            $shipping['Street2'] = $shippingStreet[1];
-        }
-        $addressInfo['Shipping'] = $shipping;
-        $addressInfo['ControlNumber'] = $order->getCpf();
         $json['AddressInfo'] = $addressInfo;
         $json['CurrencyCode'] = $order->getOrderCurrencyCode();
         $json['DDP'] = true;
+
         $shipmentItems = $shipment->getAllItems();
         $itemsList = array();
         foreach ($shipmentItems as $item) {
-            /** @var $item Mage_Sales_Model_Order_Shipment_Item */
-            // Check for a configurable product -- the simple should be loaded
-            /** @var $itemProduct Mage_Catalog_Model_Product */
+            /**
+             * Check for a configurable product -- the simple should be loaded
+             * @var Mage_Sales_Model_Order_Shipment_Item $item
+             * @var Mage_Catalog_Model_Product $itemProduct
+             */
             $orderItem = $item->getOrderItem();
             if ($orderItem->getProductType() == "configurable") {
                 $itemProduct = $orderItem->getChildrenItems();
@@ -383,33 +314,10 @@ class Iparcel_All_Helper_Api
             } else {
                 $itemProduct = Mage::getModel('catalog/product')->load($item->getOrderItem()->getProductId());
             }
-            //get item price
-            $itemPrice = (float)$item->getFinalPrice() ?: (float)$item->getPrice();
-            // if not price and item has parent (is configurable)
-            if (!$itemPrice && ($parent=$item->getParentItem())) {
-                // get parent price
-                $itemPrice = (float)$parent->getFinalPrice() ?: (float)$parent->getPrice();
-            }
-            // if still not price
-            if (!$itemPrice) {
-                // get product price
-                $itemPrice = (float)$this->_getProductAttribute($item->getProduct(), 'price');
-            }
-
             // if product isn't virtual and is configurable or downloadable
             if ($item["is_virtual"] == false && !in_array($itemProduct->getTypeId(), array('configurable','downloadable'))) {
-                // add line item node
-                $lineItem = array();
-                $lineItem['SKU'] = $item->getSku();
-                $lineItem['ValueUSD'] = $itemPrice;
-                $lineItem['CustWeightLbs'] = (float)$item->getWeight();
-                $lineItem['CustLengthInches'] = (float)$item->getLength();
-                $lineItem['CustWidthInches'] = (float)$item->getWidth();
-                $lineItem['CustHeightInches'] = (float)$item->getHeight();
-                $lineItem['Quantity'] = (float)$item->getQty();
-                $lineItem['ValueShopperCurrency'] = $itemPrice;
-                $lineItem['ShopperCurrency'] = Mage::app()->getStore()->getCurrentCurrencyCode();
-                $itemsList[] = $lineItem;
+                $itemDetails = $this->_getItemDetails($item);
+                $itemsList[] = $itemDetails;
             }
         }
         $json['ItemDetailsList'] = $itemsList;
@@ -627,7 +535,18 @@ class Iparcel_All_Helper_Api
             $item['Length'] = (float)$this->_getProductAttribute($product, 'length');
             $item['Height'] = (float)$this->_getProductAttribute($product, 'height');
             $item['Width'] = (float)$this->_getProductAttribute($product, 'width');
-            $item['Weight'] = (float)$this->_getProductAttribute($product, 'weight');
+
+            /**
+             * On configurable products, send the weight if one is available,
+             * otherwise, send '0.1'. This allows for classification while the
+             * simple product is the one actually added to cart and sold.
+             */
+            $productWeight = (float)$this->_getProductAttribute($product, 'weight');
+            if ($product->getTypeId() == Mage_Catalog_Model_Product_TYPE::TYPE_CONFIGURABLE
+            && $productWeight < 0.1) {
+                $productWeight = 0.1;
+            }
+            $item['Weight'] = $productWeight;
 
             $item['ProductURL'] = $product->getUrlPath();
             $item['SKN'] = '';
@@ -673,7 +592,7 @@ class Iparcel_All_Helper_Api
      * @param Mage_Catalog_Model_Product $product Product with Options
      * @return array Options array with all product variations
      */
-    private function _findSimpleProductVariants($product)
+    protected function _findSimpleProductVariants($product)
     {
         // get product options collection object
         $options = Mage::getModel('catalog/product_option')
@@ -765,7 +684,7 @@ class Iparcel_All_Helper_Api
      * @param array $options Array of option arrays (sku, price, title, sort_order, required)
      * @return array Array of arrays, representing the possible option variations
      */
-    private function _findVariations($options)
+    protected function _findVariations($options)
     {
         // filter out empty values
         $options = array_filter($options);
@@ -823,6 +742,111 @@ class Iparcel_All_Helper_Api
         }
 
         return $result;
+    }
+
+    /**
+     * Accepts a Magento quote or order, then returns an address formatted for
+     * the API
+     * 
+     * @param object $object Object to extract address information from
+     * @param bool $request If provided, this shipping rate request is used
+     * @return array Address information formatted for API requests
+     */
+    protected function _prepareAddress($object, $request = false)
+    {
+        /**
+         * @var Mage_Sales_Model_Quote_Address $shippingAddress
+         * @var Mage_Sales_Model_Quote_Address $billingAddress
+         * @var array $formattedAddress
+         */
+        $shippingAddress = $object->getShippingAddress();
+        $billingAddress = $object->getBillingAddress();
+        $formattedAddress = array();
+
+        $formattedAddress['Billing'] = $this->_getAddressArray(
+            $billingAddress,
+            $object->getCustomerEmail()
+        );
+
+        $formattedAddress['Shipping'] = $this->_getAddressArray(
+            $shippingAddress,
+            $object->getCustomerEmail(),
+            $request
+        );
+
+        $formattedAddress['ControlNumber'] = $object->getCpf();
+
+        return $formattedAddress;
+    }
+
+    /**
+     * Used by _prepareAddress() to generate an array of Address information
+     *
+     * @param object $address Address to act on
+     * @param string $emailAddress Email address of the user
+     * @param object|bool $request If provided, this shipping rate request is used
+     * @return array Formatted address array
+     */
+    protected function _getAddressArray($address, $emailAddress, $request = false)
+    {
+        $formattedAddress = array();
+        $formattedAddress['City'] = $request ? $request->getDestCity() : $address->getCity();
+        $formattedAddress['CountryCode'] = $request ? $request->getDestCountryId() : $address->getCountryId();
+        $formattedAddress['Email'] = $emailAddress;
+        $formattedAddress['FirstName'] = $address->getFirstname();
+        $formattedAddress['LastName'] = $address->getLastname();
+        $formattedAddress['Phone'] = $address->getTelephone();
+        $formattedAddress['PostCode'] = $request ? $request->getDestPostcode() : $address->getPostcode();
+        $formattedAddress['Region'] = $request ? $request->getDestRegionCode() : $address->getRegion();
+
+        $street = $request ? explode('\n', $request->getDestStreet()) : $address->getStreet();
+        for ($i=0; $i<count($street); $i++) {
+            $formattedAddress['Street'.($i+1)] = $street[$i];
+        }
+
+        return $formattedAddress;
+    }
+
+    /**
+     * Prepares an item for API requests
+     *
+     * @param $item
+     * @return array
+     */
+    private function _getItemDetails($item)
+    {
+        // Find the corresponding product for the item
+        $itemProduct = $item->getProduct();
+        if (!$itemProduct) {
+            $itemProduct = Mage::getModel('catalog/product')
+                ->loadByAttribute('sku', $item->getSku());
+        }
+
+        // Find the price of the product
+        $itemPrice = (float) $item->getCalculationPrice();
+        // if no price and item has parent (is configurable)
+        if (!$itemPrice && ($parent = $item->getParentItem())) {
+            // get parent price
+            $itemPrice = (float)$this->_getProductAttribute($parent->getProduct(), 'final_price') ?: (float)$this->_getProductAttribute($parent->getProduct(), 'price');
+        }
+        // if still no price
+        if (!$itemPrice) {
+            // get product price
+            $itemPrice = (float)$this->_getProductAttribute($itemProduct, 'price');
+        }
+
+        $lineItem = array();
+        $lineItem['SKU'] = $item->getSku();
+        $lineItem['ValueUSD'] = $itemPrice;
+        $lineItem['CustLengthInches'] = (float)$this->_getProductAttribute($itemProduct, 'length');
+        $lineItem['CustHeightInches'] = (float)$this->_getProductAttribute($itemProduct, 'height');
+        $lineItem['CustWidthInches'] = (float)$this->_getProductAttribute($itemProduct, 'width');
+        $lineItem['CustWeightLbs'] = (float)$this->_getProductAttribute($itemProduct, 'weight');
+        $lineItem['Quantity'] = $item->getTotalQty() ?: $item->getQty();
+        $lineItem['ValueShopperCurrency'] = $itemPrice;
+        $lineItem['ShopperCurrency'] = Mage::app()->getStore()->getCurrentCurrencyCode();
+
+        return $lineItem;
     }
 
     /**

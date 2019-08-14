@@ -10,7 +10,7 @@ class Iparcel_All_Model_Quote_Address_Total_Duty extends Iparcel_All_Model_Quote
 {
     public function __construct()
     {
-        $this->setCode('iparcel_duty');
+        $this->setCode(Mage::getModel('iparcel/payment_iparcel')->getDutyCode());
     }
 
     /**

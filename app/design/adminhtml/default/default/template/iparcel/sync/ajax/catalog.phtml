@@ -18,6 +18,6 @@
 </div>
 <script type="text/javascript">
     jQuery(document).ready(function() {
-        var sync = new iparcelSync.sync('<?php echo Mage::helper('adminhtml')->getUrl('adminhtml/iparcel_sync_ajax/catalog') ?>?isAjax=true', <?php echo Mage::getStoreConfig('catalog_mapping/upload/step'); ?>);
+        var sync = new iparcelSync.sync('<?php echo Mage::helper('adminhtml')->getUrl('adminhtml/iparcel_sync_ajax/catalogJson') ?>', <?php echo Mage::getStoreConfig('catalog_mapping/upload/step'); ?>);
     })
 </script>

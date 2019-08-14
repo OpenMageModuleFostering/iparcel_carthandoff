@@ -109,50 +109,52 @@ class Iparcel_All_Adminhtml_Iparcel_Sync_AjaxController extends Mage_Adminhtml_C
     }
 
     /**
+    * Submit Catalog request json action
+    */
+    public function catalogJsonAction() 
+    {
+        $params = $this->getRequest()->getParams();
+        $params['type'] = '_'.$params['type'].'CatalogResponse';
+        if (method_exists($this, $params['type'])) {
+            $_response = $this->$params['type']($params);
+            $this->getResponse()
+                ->setHeader('Content-type', 'application/json', true)
+                ->setBody(json_encode($_response));
+            return;
+        }
+    }
+
+    /**
      * Submit Catalog request action
      */
     public function catalogAction()
     {
-        // if is xmlHttp Request
-        if ($this->getRequest()->isXmlHttpRequest()) {
-            // proceed it
-            $params = $this->getRequest()->getParams();
-            $params['type'] = '_'.$params['type'].'CatalogResponse';
-            if (method_exists($this, $params['type'])) {
-                $_response = $this->$params['type']($params);
-                $this->getResponse()
-                    ->setHeader('Content-type', 'application/json', true)
-                    ->setBody(json_encode($_response));
-                return;
-            }
-        } else {
-            // show layout if not
-            $this->loadLayout();
-            $this->renderLayout();
-        }
+        $this->loadLayout();
+        $this->renderLayout();
     }
+
+    /**
+    * Check Items request json action
+    */
+    public function checkitemsJsonAction() 
+    {
+        $params = $this->getRequest()->getParams();
+        $params['type'] = '_'.$params['type'].'CheckItemsResponse';
+        if (method_exists($this, $params['type'])) {
+            $_response = $this->$params['type']($params);                
+            $this->getResponse()
+                ->setHeader('Content-type', 'application/json', true)
+                ->setBody(json_encode($_response));
+            return;
+        }
+    }   
 
     /**
      * Check Items request action
      */
     public function checkitemsAction()
     {
-        // if is xmlHttp Request
-        if ($this->getRequest()->isXmlHttpRequest()) {
-            // proceed it
-            $params = $this->getRequest()->getParams();
-            $params['type'] = '_'.$params['type'].'CheckItemsResponse';
-            if (method_exists($this, $params['type'])) {
-                $_response = $this->$params['type']($params);
-                $this->getResponse()
-                    ->setHeader('Content-type', 'application/json', true)
-                    ->setBody(json_encode($_response));
-                return;
-            }
-        } else {
-            // show layout if not
-            $this->loadLayout();
-            $this->renderLayout();
-        }
+        $this->loadLayout();
+        $this->renderLayout();
     }
 }

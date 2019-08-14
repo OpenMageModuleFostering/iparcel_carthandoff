@@ -13,7 +13,7 @@ class Iparcel_All_Model_Tax_Quote_Tax extends Mage_Tax_Model_Sales_Total_Quote_T
      *
      * @return Iparcel_All_Model_Quote_Address_Total_Abstract
      */
-    private function _getAbstract()
+    protected function _getAbstract()
     {
         $model = new Iparcel_All_Model_Quote_Address_Total_Abstract;
         return $model;

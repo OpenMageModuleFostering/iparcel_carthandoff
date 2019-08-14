@@ -21,11 +21,6 @@ class Iparcel_All_Model_Config_Script_Js extends Mage_Adminhtml_Model_System_Con
 
         $file = $uploadDir.'/'.$this->getValue();
 
-        // if it's delete action and file exists
-        if ($delete && file_exists($file)) {
-            unlink($file);
-        }
-
         // if it's set new action and old file exists
         $file = $uploadDir.'/'. $_FILES['groups']['name'][$this->getGroupId()]['fields'][$this->getField()]['value'];
         if (file_exists($file)) {

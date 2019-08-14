@@ -66,5 +66,7 @@ class Iparcel_All_Model_System_Config_Catalog_Mapping extends Mage_Core_Model_Co
                 throw new Exception(Mage::helper('cron')->__('Unable to remove the cron expression'));
             }
         }
+
+        return parent::_afterSave();
     }
 }

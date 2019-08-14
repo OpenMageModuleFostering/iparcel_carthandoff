@@ -6,6 +6,7 @@
  */
 
 $cartHandoff_hideCheckout = Mage::getStoreConfig('payment/ipcarthandoff/hide_proceed_to_checkout') ? 'true' : 'false';
+$cartHandoff_hideOtherMethods = Mage::getStoreConfig('payment/ipcarthandoff/hide_other_checkout_methods') ? 'true' : 'false';
 ?>
 <?php if ($this->shouldDisplay()): ?>
 <p class="ipcarthandoff-button" style="<?php echo $this->getStyle() ?>">
@@ -16,4 +17,5 @@ $cartHandoff_hideCheckout = Mage::getStoreConfig('payment/ipcarthandoff/hide_pro
 <?php endif; ?>
 <script type="text/javascript">
     cartHandoff_hideCheckout = <?php echo (string) $cartHandoff_hideCheckout; ?>;
+    cartHandoff_hideOtherMethods = <?php echo (string) $cartHandoff_hideOtherMethods; ?>;
 </script>

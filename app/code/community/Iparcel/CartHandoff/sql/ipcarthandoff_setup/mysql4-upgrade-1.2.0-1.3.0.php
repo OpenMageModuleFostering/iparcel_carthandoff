@@ -8,8 +8,8 @@ $installer->run("
 DROP TABLE IF EXISTS {$this->getTable('ipcarthandoff/checkitems')};
 CREATE TABLE {$this->getTable('ipcarthandoff/checkitems')} (
   `id` int(11) unsigned NOT NULL auto_increment,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_at` datetime default NULL,
+  `updated_at` datetime default NULL,
   `sku` varchar(255) NOT NULL,
   `country` varchar(3) NOT NULL,
   `store_id` int(11) unsigned NOT NULL,

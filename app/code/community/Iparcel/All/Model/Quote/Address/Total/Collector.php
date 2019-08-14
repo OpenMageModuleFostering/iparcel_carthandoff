@@ -17,8 +17,8 @@ class Iparcel_All_Model_Quote_Address_Total_Collector extends Mage_Sales_Model_Q
         $collectors = parent::getCollectors();
 
         $totals = array(
-            'iparcel_tax',
-            'iparcel_duty',
+            Mage::getModel('iparcel/payment_iparcel')->getTaxCode(),
+            Mage::getModel('iparcel/payment_iparcel')->getDutyCode(),
             'grand_total',
             'reward',
             'giftcardaccount',
@@ -39,7 +39,7 @@ class Iparcel_All_Model_Quote_Address_Total_Collector extends Mage_Sales_Model_Q
      * @param array $array
      * @return array
      */
-    private function _moveIndexToEnd($index, $array)
+    protected function _moveIndexToEnd($index, $array)
     {
         if (isset($array[$index])) {
             $temp = $array[$index];

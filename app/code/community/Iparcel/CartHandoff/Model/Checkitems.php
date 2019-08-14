@@ -52,10 +52,14 @@ class Iparcel_CartHandoff_Model_Checkitems extends Mage_Core_Model_Abstract
 
             $checkItems->setSku($product->getSku());
             $checkItems->setCountry($country);
-            $checkItems->setUpdatedAt(0);
             $checkItems->setStoreId($storeId);
             $checkItems->setPrice($price);
             $checkItems->setEligible($eligibile);
+            $checkItems->setUpdatedAt(
+                Mage::getModel('core/date')
+                    ->date('Y-m-d H:i:s', strtotime('now')
+                    )
+            );
             $checkItems->save();
 
             unset($checkItems);
@@ -97,10 +101,10 @@ class Iparcel_CartHandoff_Model_Checkitems extends Mage_Core_Model_Abstract
             ));
 
         foreach ($cache as $item) {
-            // Only return eligible items
-            if ($item->getEligible()) {
-                $results[$item->getSku()] = $item->getPrice();
-            }
+            $results[$item->getSku()] = array(
+                'price' => $item->getPrice(),
+                'eligible' => $item->getEligible()
+            );
         }
 
         return $results;
@@ -145,5 +149,17 @@ class Iparcel_CartHandoff_Model_Checkitems extends Mage_Core_Model_Abstract
 
         return Mage::getModel('core/date')
             ->date('Y-m-d H:i:s ', strtotime('-1 ' . $value));
+    }
+
+    public function save()
+    {
+        $currentTime = Mage::getModel('core/date')
+            ->date('Y-m-d H:i:s', strtotime('now'));
+        if ((!$this->getId() || $this->isObjectNew()) && !$this->getCreatedAt()) {
+            $this->setCreatedAt($currentTime);
+            $this->setUpdatedAt($currentTime);
+        }
+
+        return parent::save();
     }
 }

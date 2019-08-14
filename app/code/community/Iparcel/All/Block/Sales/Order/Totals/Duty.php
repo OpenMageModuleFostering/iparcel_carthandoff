@@ -20,7 +20,7 @@ class Iparcel_All_Block_Sales_Order_Totals_Duty extends Iparcel_All_Block_Sales_
             $value  = $source->getIparcelDutyAmount();
 
             $this->getParentBlock()->addTotal(new Varien_Object(array(
-                'code'   => 'iparcel_duty',
+                'code'   => Mage::getModel('iparcel/payment_iparcel')->getDutyCode(),
                 'strong' => false,
                 'label'  => Mage::helper('iparcel')->getDutyLabel(),
                 'value'  => $value

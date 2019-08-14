@@ -26,10 +26,10 @@ class Iparcel_All_InternationalController extends Mage_Core_Controller_Front_Act
         $this->_prepareHeaders();
         $current = Mage::helper('iparcel/international')->getInternational();
         if ($current) {
-            echo 'false';
+            $this->getResponse()->setBody('false');
         } else {
             Mage::helper('iparcel/international')->setInternational(true);
-            echo 'true';
+            $this->getResponse()->setBody('true');
         }
     }
 
@@ -42,9 +42,9 @@ class Iparcel_All_InternationalController extends Mage_Core_Controller_Front_Act
         $current = Mage::helper('iparcel/international')->getInternational();
         if ($current) {
             Mage::helper('iparcel/international')->setInternational(false);
-            echo 'true';
+            $this->getResponse()->setBody('true');
         } else {
-            echo 'false';
+            $this->getResponse()->setBody('false');
         }
     }
 }
