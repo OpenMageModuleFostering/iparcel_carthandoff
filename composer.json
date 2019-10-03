@@ -1,16 +1,19 @@
 {
-    "name": "OpenMageModuleFostering/iparcel_carthandoff",
+    "name": "OpenMageModuleFostering\/iparcel_carthandoff",
     "type": "magento-module",
     "license": "GPL",
     "homepage": "",
     "description": "Enable your store to sell internationally, immediately!",
     "authors": [
-    {
-        "name": "Bobby Burden",
-        "email": "bburden@i-parcel.com"
-    }
-],
+        {
+            "name": "Bobby Burden",
+            "email": "bburden@i-parcel.com"
+        }
+    ],
     "suggest": {
-        "magento-hackathon/magento-composer-installer": "*"
-    }
+        "magento-hackathon\/magento-composer-installer": "*"
+    },
+    "keywords": [
+        "openmage-module"
+    ]
 }
